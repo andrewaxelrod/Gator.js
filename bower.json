@@ -1,5 +1,5 @@
 {
-  "name": "gatorjs",
+  "name": "gator",
   "version": "0.0.1",
   "description": "Angular Style Form Validator for Vanilla Javascript. No Angular. No Jquery. Under 10kb.",
   "license": "MIT",
