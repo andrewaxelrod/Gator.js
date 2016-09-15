@@ -1,1 +1,1 @@
-# Gator.js
+Gator.js is a Javascript Form Validator. This is still a work in progress and will be released in October 2106.

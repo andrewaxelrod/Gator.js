@@ -1,0 +1,1 @@
+console.error("Error: Cannot find module '/Users/user/Documents/github/gator.js/src/gator.js' from '/Users/user/Documents/github/gator.js'");

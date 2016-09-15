@@ -1,0 +1,23 @@
+{
+  "name": "gatorjs",
+  "version": "0.0.1",
+  "description": "Angular Style Form Validator for Vanilla Javascript. No Angular. No Jquery. Under 10kb.",
+  "license": "MIT",
+  "main": "dist/gator.min.js",
+  "ignore": [
+    "/.*/",
+    "/demo/",
+    "/test/",
+    "/.*",
+    "/bower.json",
+    "/karma.conf.js",
+    "/src",
+    "/lib"
+  ],
+  "keywords": [
+    "gator",
+    "form validation",
+    "form validator",
+    "validation"
+  ]
+}
