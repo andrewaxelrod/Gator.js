@@ -1,18 +1,21 @@
-import {appPrefix} from "./config.js";
-import {nl2arr, pubSub} from "./utils.js";
+import {fieldState, appPrefix} from "./config.js";
+import {getUniqueId, nl2arr, pubSub} from "./utils.js";
 import Validator from "./validator"
 
 class FormField { 
  
-    constructor(parent, elem) { 
-       this.uniqueId = Date().toString();
-       this.parent = parent;
-       this.elem = elem;
-       this.name = this.elem.getAttribute("name");
+    constructor(formElem, fieldElem) { 
+       this.uniqueId = getUniqueId();
+       this.form = formElem;
+       this.elem = fieldElem;
+       this.state = fieldState.INIT;
+       this.fieldName = this.elem.getAttribute("name");
+       this.formName = formElem.name;
        this.validators = [];
        this.valid = true;
        this.validatorKey = null;
        this.onInit();
+
 
     } 
 
@@ -28,8 +31,8 @@ class FormField {
     subscribe() {
         let self = this;
         this.subscription = pubSub.subscribe('validate:field', (uniqueId) => {
-            // This is the item that needs to be validated
-            if(uniqueId == this.uniqueId) {
+            // Determines if this is the field to be validated.
+            if(uniqueId === this.uniqueId) {
                 self.validate();
             }
         });
@@ -71,29 +74,27 @@ class FormField {
     validate() {
 
         let value = this.elem.value;
-        this.valid = true;
-        this.validatorKey = null;
-        
+        this.state = fieldState.WAIT;
         for(let validator of this.validators) {
             if(!validator.isValid(value)) {
-                this.valid = false;
-                this.validatorKey = validator.key;
+                this.state = fieldState.ERROR;
                 pubSub.publish('messages:show', 
                     {
-                        fieldName: this.name,
-                        formName: this.parent.name,
+                        fieldName: this.fieldName,
+                        formName: this.formName,
                         key: validator.key
                     } 
                 );
                 break;
             }
         }
-        
-        if(this.valid) {
+
+        if(this.state === fieldState.WAIT) {
+            this.state = fieldState.SUCCESS;
             pubSub.publish('messages:clear', 
                 {
-                    fieldName: this.name,
-                    formName: this.parent.name
+                    fieldName: this.fieldName,
+                    formName: this.formName
                 } 
             );
         }

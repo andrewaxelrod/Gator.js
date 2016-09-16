@@ -1,6 +1,8 @@
 import { pubSub } from "./utils";
 import FormField from './form-field';
 
+
+// This is an Event Loop
 class Coordinator {
 
     constructor() {
@@ -15,7 +17,7 @@ class Coordinator {
         let self = this;
             this.subCoordinate = pubSub.subscribe('coordinate', (obj) => {
             if (this.whichObject(obj) === 'FORM_FIELD') {
-                obj.validate(obj);
+                pubSub.publish('validate:field', obj.uniqueId); 
             }
         }); 
     }

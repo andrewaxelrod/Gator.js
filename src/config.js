@@ -57,4 +57,13 @@ export const rules = {
       }
 };
 
+// Simple version of an Enums
+export const fieldState = {
+    INIT: 0,
+    SUCCESS: 1,
+    ERROR: 2,
+    HANDSHAKE: 4,
+    WAIT: 4
+};
+
  

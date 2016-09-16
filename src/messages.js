@@ -51,16 +51,22 @@ class Messages {
     }
 
     show(key) { 
+        this.validateKey(key);
         this.messages[key].style.display = 'block';
     }
 
     hideAllMessages() {
         let messages = this.messages;
         for(let key in messages ) {
-            if (messages.hasOwnProperty(key)) {
-                messages[key].style.display = 'none';
-            }
+            this.validateKey(key);
+            this.messages[key].style.display = 'none';
         }
+    }
+
+    validateKey(key) {
+         if (!this.messages.hasOwnProperty(key)) {
+             throw new Error(`Missing "gt-${key} in gt-messages="${this.formName}.${this.fieldName}"`);
+         }
     }
 
     destroy() {

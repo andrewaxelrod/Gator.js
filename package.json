@@ -35,7 +35,7 @@
     "watchify": "^3.4.0"
   },
   "scripts": {
-    "server": "http-server -p 9000",
+    "start": "http-server -p 9000",
     "build": "npm run build-debug && npm run build-min",
     "build-debug": "browserify src/gator.js -s Gator -t [babelify] -p [bannerify --file .banner ] -o dist/gator.js",
     "build-min": "uglifyjs dist/gator.js --comments '/!/' -m screw_ie8=true -c screw_ie8=true,unused=false -o dist/gator.min.js",

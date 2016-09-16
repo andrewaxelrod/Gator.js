@@ -40,7 +40,7 @@ class Form {
 
     destroy() {
         this.elem = null;
-        this.fields = [];
+        this.fields.length = 0;
     }
 
 }

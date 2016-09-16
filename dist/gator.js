@@ -75,9 +75,94 @@
       priority: 0
     }
   };
+
+  // Simple version of an Enums
+  var fieldState = exports.fieldState = {
+    INIT: 0,
+    SUCCESS: 1,
+    ERROR: 2,
+    HANDSHAKE: 4,
+    WAIT: 4
+  };
 });
 
 },{}],2:[function(require,module,exports){
+(function (global, factory) {
+    if (typeof define === "function" && define.amd) {
+        define(['module', './utils', './form-field'], factory);
+    } else if (typeof exports !== "undefined") {
+        factory(module, require('./utils'), require('./form-field'));
+    } else {
+        var mod = {
+            exports: {}
+        };
+        factory(mod, global.utils, global.formField);
+        global.coordinator = mod.exports;
+    }
+})(this, function (module, _utils, _formField) {
+    'use strict';
+
+    var _formField2 = _interopRequireDefault(_formField);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var Coordinator = function () {
+        function Coordinator() {
+            _classCallCheck(this, Coordinator);
+
+            this.onInit();
+        }
+
+        Coordinator.prototype.onInit = function onInit() {
+            this.subscribe();
+        };
+
+        Coordinator.prototype.subscribe = function subscribe() {
+            var _this = this;
+
+            var self = this;
+            this.subCoordinate = _utils.pubSub.subscribe('coordinate', function (obj) {
+                if (_this.whichObject(obj) === 'FORM_FIELD') {
+                    _utils.pubSub.publish('validate:field', obj.uniqueId);
+                }
+            });
+        };
+
+        Coordinator.prototype.whichObject = function whichObject(obj) {
+            if (obj instanceof _formField2.default) {
+                return 'FORM_FIELD';
+            }
+        };
+
+        Coordinator.prototype.validateFields = function validateFields() {
+            // Could send an obj, but the you are ending the same object back to the object. 
+            // This may cause a ciruclar reference. 
+            //
+            // You could also do an obj.validate(), which would break the pub/sub.
+            _utils.pubSub.publish('validate:fields', obj.uniqueId);
+        };
+
+        Coordinator.prototype.destroy = function destroy() {
+            this.subCoordinate.remove();
+        };
+
+        return Coordinator;
+    }();
+
+    module.exports = new Coordinator();
+});
+
+},{"./form-field":3,"./utils":7}],3:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(["module", "./config.js", "./utils.js", "./validator"], factory);
@@ -108,12 +193,15 @@
     }
 
     var FormField = function () {
-        function FormField(parent, elem) {
+        function FormField(formElem, fieldElem) {
             _classCallCheck(this, FormField);
 
-            this.parent = parent;
-            this.elem = elem;
-            this.name = this.elem.getAttribute("name");
+            this.uniqueId = (0, _utils.getUniqueId)();
+            this.form = formElem;
+            this.elem = fieldElem;
+            this.state = _config.fieldState.INIT;
+            this.fieldName = this.elem.getAttribute("name");
+            this.formName = formElem.name;
             this.validators = [];
             this.valid = true;
             this.validatorKey = null;
@@ -121,25 +209,29 @@
         }
 
         FormField.prototype.onInit = function onInit() {
-            var _this = this;
-
             var self = this;
             this.registerValidators();
             this.prioritizeValidators();
             this.listener();
+            this.subscribe();
+        };
 
-            this.subscription = _utils.pubSub.subscribe('validate:field', function (form) {
-                if (form === _this.parent) {
-                    self.valdate();
+        FormField.prototype.subscribe = function subscribe() {
+            var _this = this;
+
+            var self = this;
+            this.subscription = _utils.pubSub.subscribe('validate:field', function (uniqueId) {
+                // Determines if this is the field to be validated.
+                if (uniqueId === _this.uniqueId) {
+                    self.validate();
                 }
             });
         };
 
         FormField.prototype.listener = function listener() {
-            var _this2 = this;
-
+            var self = this;
             this.elem.addEventListener('keyup', function () {
-                _this2.validate();
+                _utils.pubSub.publish('coordinate', self);
             });
         };
 
@@ -173,9 +265,7 @@
         FormField.prototype.validate = function validate() {
 
             var value = this.elem.value;
-            this.valid = true;
-            this.validatorKey = null;
-
+            this.state = _config.fieldState.WAIT;
             for (var _iterator = this.validators, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
                 var _ref;
 
@@ -191,21 +281,21 @@
                 var validator = _ref;
 
                 if (!validator.isValid(value)) {
-                    this.valid = false;
-                    this.validatorKey = validator.key;
+                    this.state = _config.fieldState.ERROR;
                     _utils.pubSub.publish('messages:show', {
-                        fieldName: this.name,
-                        formName: this.parent.name,
+                        fieldName: this.fieldName,
+                        formName: this.formName,
                         key: validator.key
                     });
                     break;
                 }
             }
 
-            if (this.valid) {
+            if (this.state === _config.fieldState.WAIT) {
+                this.state = _config.fieldState.SUCCESS;
                 _utils.pubSub.publish('messages:clear', {
-                    fieldName: this.name,
-                    formName: this.parent.name
+                    fieldName: this.fieldName,
+                    formName: this.formName
                 });
             }
         };
@@ -220,7 +310,7 @@
     module.exports = FormField;
 });
 
-},{"./config.js":1,"./utils.js":6,"./validator":7}],3:[function(require,module,exports){
+},{"./config.js":1,"./utils.js":7,"./validator":8}],4:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(['module', './form-field', './messages', './utils.js', './config.js'], factory);
@@ -307,7 +397,7 @@
 
         Form.prototype.destroy = function destroy() {
             this.elem = null;
-            this.fields = [];
+            this.fields.length = 0;
         };
 
         return Form;
@@ -316,47 +406,50 @@
     module.exports = Form;
 });
 
-},{"./config.js":1,"./form-field":2,"./messages":5,"./utils.js":6}],4:[function(require,module,exports){
+},{"./config.js":1,"./form-field":3,"./messages":6,"./utils.js":7}],5:[function(require,module,exports){
 (function (global, factory) {
-  if (typeof define === "function" && define.amd) {
-    define(['module', './form'], factory);
-  } else if (typeof exports !== "undefined") {
-    factory(module, require('./form'));
-  } else {
-    var mod = {
-      exports: {}
-    };
-    factory(mod, global.form);
-    global.gator = mod.exports;
-  }
-})(this, function (module, _form) {
-  'use strict';
-
-  var _form2 = _interopRequireDefault(_form);
-
-  function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : {
-      default: obj
-    };
-  }
-
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
+    if (typeof define === "function" && define.amd) {
+        define(['module', './form', './coordinator'], factory);
+    } else if (typeof exports !== "undefined") {
+        factory(module, require('./form'), require('./coordinator'));
+    } else {
+        var mod = {
+            exports: {}
+        };
+        factory(mod, global.form, global.coordinator);
+        global.gator = mod.exports;
     }
-  }
+})(this, function (module, _form, _coordinator) {
+    'use strict';
 
-  var Gator = function Gator() {
-    _classCallCheck(this, Gator);
+    var _form2 = _interopRequireDefault(_form);
 
-    var elem = document.getElementById('customerForm');
-    var elemForm = new _form2.default(elem);
-  };
+    var _coordinator2 = _interopRequireDefault(_coordinator);
 
-  module.exports = Gator;
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var Gator = function Gator() {
+        _classCallCheck(this, Gator);
+
+        var elem = document.getElementById('customerForm');
+        var coord = _coordinator2.default;
+        var elemForm = new _form2.default(elem);
+    };
+
+    module.exports = Gator;
 });
 
-},{"./form":3}],5:[function(require,module,exports){
+},{"./coordinator":2,"./form":4}],6:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(["module", "./utils.js", "./config.js"], factory);
@@ -427,15 +520,21 @@
         };
 
         Messages.prototype.show = function show(key) {
+            this.validateKey(key);
             this.messages[key].style.display = 'block';
         };
 
         Messages.prototype.hideAllMessages = function hideAllMessages() {
             var messages = this.messages;
             for (var key in messages) {
-                if (messages.hasOwnProperty(key)) {
-                    messages[key].style.display = 'none';
-                }
+                this.validateKey(key);
+                this.messages[key].style.display = 'none';
+            }
+        };
+
+        Messages.prototype.validateKey = function validateKey(key) {
+            if (!this.messages.hasOwnProperty(key)) {
+                throw new Error("Missing \"gt-" + key + " in gt-messages=\"" + this.formName + "." + this.fieldName + "\"");
             }
         };
 
@@ -452,10 +551,10 @@
     module.exports = Messages;
 });
 
-},{"./config.js":1,"./utils.js":6}],6:[function(require,module,exports){
+},{"./config.js":1,"./utils.js":7}],7:[function(require,module,exports){
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
-    define(["exports"], factory);
+    define(['exports'], factory);
   } else if (typeof exports !== "undefined") {
     factory(exports);
   } else {
@@ -466,12 +565,13 @@
     global.utils = mod.exports;
   }
 })(this, function (exports) {
-  "use strict";
+  'use strict';
 
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
   exports.nl2arr = nl2arr;
+  exports.getUniqueId = getUniqueId;
   function nl2arr(nodeList) {
     return Array.prototype.slice.call(nodeList);
   }
@@ -508,9 +608,16 @@
       }
     };
   }();
+
+  function getUniqueId() {
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+  }
 });
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(['module', './config'], factory);
@@ -537,12 +644,27 @@
             _classCallCheck(this, Validator);
 
             this.key = key;
-            this.params = params.split(',');
-            this.priority = _config.rules[key].priority;
+            this.params = params.length ? params.split(',') : [];
+            this.onInit();
         }
+
+        Validator.prototype.onInit = function onInit() {
+            this.setPriority();
+        };
+
+        Validator.prototype.setPriority = function setPriority() {
+            if (!_config.rules.hasOwnProperty(this.key)) {
+                throw new Error('Invalid directive, "gt-' + this.key + '"');
+            }
+            this.priority = _config.rules[this.key].priority;
+        };
 
         Validator.prototype.isValid = function isValid(value) {
             return _config.rules[this.key].fn.call(this, value);
+        };
+
+        Validator.prototype.destroy = function destroy() {
+            this.params.length = 0;
         };
 
         return Validator;
@@ -551,5 +673,5 @@
     module.exports = Validator;
 });
 
-},{"./config":1}]},{},[4])(4)
+},{"./config":1}]},{},[5])(5)
 });
