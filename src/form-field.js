@@ -5,6 +5,7 @@ import Validator from "./validator"
 class FormField { 
  
     constructor(parent, elem) { 
+       this.uniqueId = Date().toString();
        this.parent = parent;
        this.elem = elem;
        this.name = this.elem.getAttribute("name");
@@ -20,17 +21,24 @@ class FormField {
         this.registerValidators();
         this.prioritizeValidators();
         this.listener();
+        this.subscribe();
+       
+    }
 
-        this.subscription = pubSub.subscribe('validate:field', (form) => {
-           if(form === this.parent) {
-                self.valdate();
-           }
+    subscribe() {
+        let self = this;
+        this.subscription = pubSub.subscribe('validate:field', (uniqueId) => {
+            // This is the item that needs to be validated
+            if(uniqueId == this.uniqueId) {
+                self.validate();
+            }
         });
     }
 
     listener() {
+        let self = this;
         this.elem.addEventListener('keyup', () => {
-            this.validate();
+            pubSub.publish('coordinate', self);
         });
     }
 

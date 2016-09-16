@@ -12,10 +12,10 @@ class Form {
         this.name = this.elem.getAttribute("name");
         this.onInit();
     }
-
+ 
     onInit() {
         this.registerFormFields();
-        this.registerMessages();
+        this.registerMessages(); 
     }
 
     registerFormFields() {
