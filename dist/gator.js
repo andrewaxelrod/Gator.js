@@ -19,14 +19,21 @@
   });
   var priorityDefault = exports.priorityDefault = 30;
 
-  var appPrefix = exports.appPrefix = 'gt-';
+  var appPrefix = exports.appPrefix = 'gt';
 
   var fieldQuery = exports.fieldQuery = {
+    prefix: '^' + appPrefix,
     input: 'input[required]:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
     select: ',select[required]:not(:disabled):not([readonly])',
     textarea: ',textarea[required]:not(:disabled):not([readonly])',
-    messages: 'gt-messages',
-    message: 'gt-message'
+    messages: '[' + appPrefix + '-messages]',
+    message: '[' + appPrefix + '-message]'
+  };
+
+  var attributes = exports.attributes = {
+    prefix: appPrefix + '-',
+    messages: appPrefix + '-messages',
+    message: appPrefix + '-message'
   };
 
   var ruleTypes = exports.ruleTypes = {
@@ -71,7 +78,13 @@
       priority: 512
     },
     handshake: {
-      fn: function fn(value) {},
+      fn: function fn(value) {
+        var key = this.params[0];
+        var callback = function callback(msg) {
+          console.log(msg);
+        };
+        window.gator.handShakes[key]('1', callback, '3');
+      },
       priority: 0
     }
   };
@@ -84,23 +97,29 @@
     HANDSHAKE: 4,
     WAIT: 4
   };
+
+  var objType = exports.objType = {
+    FIELD: 0,
+    FORM: 1,
+    MESSAGE: 2
+  };
 });
 
 },{}],2:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
-        define(['module', './utils', './form-field'], factory);
+        define(["module", "./utils", "./form-field", "./config.js"], factory);
     } else if (typeof exports !== "undefined") {
-        factory(module, require('./utils'), require('./form-field'));
+        factory(module, require("./utils"), require("./form-field"), require("./config.js"));
     } else {
         var mod = {
             exports: {}
         };
-        factory(mod, global.utils, global.formField);
+        factory(mod, global.utils, global.formField, global.config);
         global.coordinator = mod.exports;
     }
-})(this, function (module, _utils, _formField) {
-    'use strict';
+})(this, function (module, _utils, _formField, _config) {
+    "use strict";
 
     var _formField2 = _interopRequireDefault(_formField);
 
@@ -128,12 +147,10 @@
         };
 
         Coordinator.prototype.subscribe = function subscribe() {
-            var _this = this;
-
             var self = this;
             this.subCoordinate = _utils.pubSub.subscribe('coordinate', function (obj) {
-                if (_this.whichObject(obj) === 'FORM_FIELD') {
-                    _utils.pubSub.publish('validate:field', obj.uniqueId);
+                if (obj.objType === _config.objType.FIELD) {
+                    _utils.pubSub.publish('field:validate', obj.uniqueId);
                 }
             });
         };
@@ -149,7 +166,7 @@
             // This may cause a ciruclar reference. 
             //
             // You could also do an obj.validate(), which would break the pub/sub.
-            _utils.pubSub.publish('validate:fields', obj.uniqueId);
+            _utils.pubSub.publish('field:validate', uniqueId);
         };
 
         Coordinator.prototype.destroy = function destroy() {
@@ -162,7 +179,7 @@
     module.exports = new Coordinator();
 });
 
-},{"./form-field":3,"./utils":7}],3:[function(require,module,exports){
+},{"./config.js":1,"./form-field":3,"./utils":7}],3:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(["module", "./config.js", "./utils.js", "./validator"], factory);
@@ -193,70 +210,79 @@
     }
 
     var FormField = function () {
-        function FormField(formElem, fieldElem) {
+        function FormField(fieldElem, formName) {
             _classCallCheck(this, FormField);
 
             this.uniqueId = (0, _utils.getUniqueId)();
-            this.form = formElem;
-            this.elem = fieldElem;
+            this.objType = _config.objType.FIELD;
             this.state = _config.fieldState.INIT;
-            this.fieldName = this.elem.getAttribute("name");
-            this.formName = formElem.name;
-            this.validators = [];
-            this.valid = true;
-            this.validatorKey = null;
+
+            this._fieldElem = fieldElem;
+            this.fieldName = fieldElem.getAttribute("name");
+            this.formName = formName;
+            this._validators = [];
             this.onInit();
         }
 
         FormField.prototype.onInit = function onInit() {
-            var self = this;
             this.registerValidators();
             this.prioritizeValidators();
-            this.listener();
             this.subscribe();
+            this.listener();
         };
 
         FormField.prototype.subscribe = function subscribe() {
             var _this = this;
 
             var self = this;
-            this.subscription = _utils.pubSub.subscribe('validate:field', function (uniqueId) {
+
+            this.subFieldValidate = _utils.pubSub.subscribe('field:validate', function (uniqueId) {
                 // Determines if this is the field to be validated.
                 if (uniqueId === _this.uniqueId) {
                     self.validate();
                 }
             });
+
+            this.subFieldDestroy = _utils.pubSub.subscribe('field:destroy', function (uniqueId) {
+                self.destroy();
+            });
         };
 
         FormField.prototype.listener = function listener() {
-            var self = this;
-            this.elem.addEventListener('keyup', function () {
-                _utils.pubSub.publish('coordinate', self);
+            this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
+        };
+
+        FormField.prototype.publish = function publish() {
+            _utils.pubSub.publish('coordinate', {
+                uniqueId: this.uniqueId,
+                objType: this.objType
             });
         };
 
         FormField.prototype.registerValidators = function registerValidators() {
             var self = this,
                 attribute = null,
-                regex = new RegExp("^" + _config.appPrefix, 'i');
+                regex = new RegExp(_config.fieldQuery.prefix, 'i');
 
-            (0, _utils.nl2arr)(this.elem.attributes).forEach(function (attr) {
+            (0, _utils.nl2arr)(this._fieldElem.attributes).forEach(function (attr) {
                 if (attr.name && regex.test(attr.name) && attr.specified) {
-                    attribute = attr.name.slice(_config.appPrefix.length);
+                    console.log(attr.name);
+                    attribute = attr.name.slice(_config.attributes.prefix.length);
                 } else if (attr.name === 'required' && attr.specified) {
                     attribute = 'required';
                 } else {
                     attribute = null;
                 }
+
                 if (attribute) {
-                    self.validators.push(new _validator2.default(attribute, attr.value));
+                    self._validators.push(new _validator2.default(attribute, attr.value));
                 }
             });
         };
 
         FormField.prototype.prioritizeValidators = function prioritizeValidators() {
-            if (this.validators.length) {
-                this.validators.sort(function (a, b) {
+            if (this._validators.length) {
+                this._validators.sort(function (a, b) {
                     return b.priority - a.priority;
                 });
             }
@@ -264,9 +290,10 @@
 
         FormField.prototype.validate = function validate() {
 
-            var value = this.elem.value;
+            var value = this._fieldElem.value;
             this.state = _config.fieldState.WAIT;
-            for (var _iterator = this.validators, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+
+            for (var _iterator = this._validators, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
                 var _ref;
 
                 if (_isArray) {
@@ -282,26 +309,36 @@
 
                 if (!validator.isValid(value)) {
                     this.state = _config.fieldState.ERROR;
-                    _utils.pubSub.publish('messages:show', {
-                        fieldName: this.fieldName,
-                        formName: this.formName,
-                        key: validator.key
-                    });
-                    break;
+                    this.showError(validator.key);
+                    return;
                 }
             }
 
-            if (this.state === _config.fieldState.WAIT) {
-                this.state = _config.fieldState.SUCCESS;
-                _utils.pubSub.publish('messages:clear', {
-                    fieldName: this.fieldName,
-                    formName: this.formName
-                });
-            }
+            this.state = _config.fieldState.SUCCESS;
+            this.clearError();
+        };
+
+        FormField.prototype.showError = function showError(key) {
+            _utils.pubSub.publish('messages:show', {
+                fieldName: this.fieldName,
+                formName: this.formName,
+                key: key
+            });
+        };
+
+        FormField.prototype.clearError = function clearError() {
+            _utils.pubSub.publish('messages:clear', {
+                fieldName: this.fieldName,
+                formName: this.formName
+            });
         };
 
         FormField.prototype.destroy = function destroy() {
-            this.subscription.remove();
+            this._fieldElem.removeEventListener('keyup', this.publish.bind(this), false);
+            this.subFieldValidate.remove();
+            this.subFieldDestroy.remove();
+            this._fieldElem = null;
+            this._validators.length = 0;
         };
 
         return FormField;
@@ -329,25 +366,6 @@
     var _formField2 = _interopRequireDefault(_formField);
 
     var _messages2 = _interopRequireDefault(_messages);
-
-    var util = _interopRequireWildcard(_utils);
-
-    function _interopRequireWildcard(obj) {
-        if (obj && obj.__esModule) {
-            return obj;
-        } else {
-            var newObj = {};
-
-            if (obj != null) {
-                for (var key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-                }
-            }
-
-            newObj.default = obj;
-            return newObj;
-        }
-    }
 
     function _interopRequireDefault(obj) {
         return obj && obj.__esModule ? obj : {
@@ -381,8 +399,8 @@
             var _this = this;
 
             var self = this;
-            util.nl2arr(this.elem.querySelectorAll(_config.fieldQuery.input + _config.fieldQuery.select + _config.fieldQuery.textarea)).forEach(function (elem) {
-                _this.fields.push(new _formField2.default(_this, elem));
+            (0, _utils.nl2arr)(this.elem.querySelectorAll(_config.fieldQuery.input + _config.fieldQuery.select + _config.fieldQuery.textarea)).forEach(function (elem) {
+                _this.fields.push(new _formField2.default(elem, _this.name));
             });
         };
 
@@ -390,8 +408,8 @@
             var _this2 = this;
 
             var self = this;
-            util.nl2arr(this.elem.querySelectorAll('[' + _config.fieldQuery.messages + ']')).forEach(function (elem) {
-                _this2.messages.push(new _messages2.default(_this2, elem));
+            (0, _utils.nl2arr)(this.elem.querySelectorAll(_config.fieldQuery.messages)).forEach(function (elem) {
+                _this2.messages.push(new _messages2.default(elem));
             });
         };
 
@@ -438,13 +456,24 @@
         }
     }
 
-    var Gator = function Gator() {
-        _classCallCheck(this, Gator);
+    var Gator = function () {
+        function Gator() {
+            _classCallCheck(this, Gator);
 
-        var elem = document.getElementById('customerForm');
-        var coord = _coordinator2.default;
-        var elemForm = new _form2.default(elem);
-    };
+            var elem = document.getElementById('customerForm');
+            var coord = _coordinator2.default;
+            var elemForm = new _form2.default(elem);
+
+            this.handShakes = {};
+        }
+
+        Gator.prototype.handshake = function handshake(topic, fn) {
+            this.handShakes[topic] = fn;
+            return this;
+        };
+
+        return Gator;
+    }();
 
     module.exports = Gator;
 });
@@ -472,24 +501,24 @@
     }
 
     var Messages = function () {
-        function Messages(parent, elem) {
+        function Messages(msgsElem) {
             _classCallCheck(this, Messages);
 
-            this.parent = parent;
-            this.elem = elem;
-            this.messages = {};
+            this._msgsElem = msgsElem;
+            this._messages = {};
             this.formName = null;
             this.fieldName = null;
             this.onInit();
         }
 
         Messages.prototype.onInit = function onInit() {
-            var attrs = this.elem.getAttribute(_config.fieldQuery.messages).split('.');
+            console.log(_config.attributes);
+            var attrs = this._msgsElem.getAttribute(_config.attributes.messages).split('.');
             this.formName = attrs[0];
             this.fieldName = attrs[1];
 
-            this.registerMsgs();
-            this.hideAllMessages();
+            this.register();
+            this.hideAll();
             this.subscribe();
         };
 
@@ -497,52 +526,57 @@
             var self = this;
             this.subShow = _utils.pubSub.subscribe('messages:show', function (obj) {
                 if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
-                    self.hideAllMessages();
+                    self.hideAll();
                     self.show(obj.key);
                 }
             });
 
             this.subClear = _utils.pubSub.subscribe('messages:clear', function (obj) {
                 if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
-                    self.hideAllMessages();
+                    self.hideAll();
                 }
+            });
+
+            this.subDestroy = _utils.pubSub.subscribe('messages:destroy', function (obj) {
+                self.destroy();
             });
         };
 
-        Messages.prototype.registerMsgs = function registerMsgs() {
+        Messages.prototype.register = function register() {
             var self = this;
-            (0, _utils.nl2arr)(this.elem.querySelectorAll("[" + _config.fieldQuery.message + "]")).forEach(function (elem) {
-                var key = elem.getAttribute(_config.fieldQuery.message);
+            (0, _utils.nl2arr)(this._msgsElem.querySelectorAll(_config.fieldQuery.message)).forEach(function (msgElem) {
+                var key = msgElem.getAttribute(_config.attributes.message);
                 if (key) {
-                    self.messages[key] = elem;
+                    self._messages[key] = msgElem;
                 }
             });
         };
 
         Messages.prototype.show = function show(key) {
             this.validateKey(key);
-            this.messages[key].style.display = 'block';
+            this._messages[key].style.display = 'block';
         };
 
-        Messages.prototype.hideAllMessages = function hideAllMessages() {
-            var messages = this.messages;
+        Messages.prototype.hideAll = function hideAll() {
+            var messages = this._messages;
             for (var key in messages) {
                 this.validateKey(key);
-                this.messages[key].style.display = 'none';
+                messages[key].style.display = 'none';
             }
         };
 
         Messages.prototype.validateKey = function validateKey(key) {
-            if (!this.messages.hasOwnProperty(key)) {
+            if (!this._messages.hasOwnProperty(key)) {
                 throw new Error("Missing \"gt-" + key + " in gt-messages=\"" + this.formName + "." + this.fieldName + "\"");
             }
         };
 
         Messages.prototype.destroy = function destroy() {
-            this.elem = null;
-            this.messages = null;
+            this._elem = null;
+            this._messages.length = 0;
             this.subShow.remove();
             this.subClear.remove();
+            this.subDestroy.remove();
         };
 
         return Messages;
@@ -660,6 +694,7 @@
         };
 
         Validator.prototype.isValid = function isValid(value) {
+            console.log(this.key);
             return _config.rules[this.key].fn.call(this, value);
         };
 

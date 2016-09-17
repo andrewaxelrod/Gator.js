@@ -1,107 +1,125 @@
-import {fieldState, appPrefix} from "./config.js";
+import {objType, fieldState, attributes, fieldQuery} from "./config.js";
 import {getUniqueId, nl2arr, pubSub} from "./utils.js";
 import Validator from "./validator"
 
 class FormField { 
  
-    constructor(formElem, fieldElem) { 
-       this.uniqueId = getUniqueId();
-       this.form = formElem;
-       this.elem = fieldElem;
-       this.state = fieldState.INIT;
-       this.fieldName = this.elem.getAttribute("name");
-       this.formName = formElem.name;
-       this.validators = [];
-       this.valid = true;
-       this.validatorKey = null;
-       this.onInit();
+    constructor(fieldElem, formName) { 
+        this.uniqueId = getUniqueId();
+        this.objType = objType.FIELD;
+        this.state = fieldState.INIT;
 
-
+        this._fieldElem = fieldElem;
+        this.fieldName = fieldElem.getAttribute("name");
+        this.formName = formName;
+        this._validators = [];
+        this.onInit();
     } 
 
     onInit() {
-        let self = this;
         this.registerValidators();
         this.prioritizeValidators();
-        this.listener();
         this.subscribe();
+        this.listener();
        
     }
 
     subscribe() {
         let self = this;
-        this.subscription = pubSub.subscribe('validate:field', (uniqueId) => {
+
+        this.subFieldValidate = pubSub.subscribe('field:validate', (uniqueId) => {
             // Determines if this is the field to be validated.
             if(uniqueId === this.uniqueId) {
                 self.validate();
             }
         });
+
+        this.subFieldDestroy = pubSub.subscribe('field:destroy', (uniqueId) => {
+            self.destroy();
+        });
     }
 
+    // Only pass in info you need and don't pass by reference.
+    // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
-        let self = this;
-        this.elem.addEventListener('keyup', () => {
-            pubSub.publish('coordinate', self);
-        });
+        this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
+    }
+
+    // Only pass in variables that you need. 
+    publish() {
+        pubSub.publish('coordinate', 
+            {
+                uniqueId: this.uniqueId,
+                objType: this.objType
+            });
     }
 
     registerValidators() {
         let self = this,
             attribute = null,
-            regex = new RegExp(`^${appPrefix}`, 'i');
+            regex = new RegExp(fieldQuery.prefix, 'i');
 
-        nl2arr(this.elem.attributes).forEach((attr) => {
+        nl2arr(this._fieldElem.attributes).forEach((attr) => {
             if( attr.name && regex.test(attr.name) && attr.specified) {
-                attribute = attr.name.slice(appPrefix.length);
+                console.log(attr.name);
+                attribute = attr.name.slice(attributes.prefix.length);
             } else if (attr.name === 'required' && attr.specified) {
                 attribute = 'required';
             } else {
                 attribute = null;
             }
+          
             if(attribute) {
-                self.validators.push(new Validator(attribute, attr.value));
+                self._validators.push(new Validator(attribute, attr.value));
             } 
            
         });
     }
 
     prioritizeValidators() {
-        if(this.validators.length) {
-            this.validators.sort((a, b) =>  b.priority - a.priority);
+        if(this._validators.length) {
+            this._validators.sort((a, b) =>  b.priority - a.priority);
         }
     }
 
     validate() {
 
-        let value = this.elem.value;
+        let value = this._fieldElem.value;
         this.state = fieldState.WAIT;
-        for(let validator of this.validators) {
+        
+        for(let validator of this._validators) {
             if(!validator.isValid(value)) {
                 this.state = fieldState.ERROR;
-                pubSub.publish('messages:show', 
-                    {
-                        fieldName: this.fieldName,
-                        formName: this.formName,
-                        key: validator.key
-                    } 
-                );
-                break;
+                this.showError(validator.key);
+                return;
             }
         }
 
-        if(this.state === fieldState.WAIT) {
-            this.state = fieldState.SUCCESS;
-            pubSub.publish('messages:clear', 
-                {
-                    fieldName: this.fieldName,
-                    formName: this.formName
-                } 
-            );
-        }
+       this.state = fieldState.SUCCESS;
+       this.clearError();
+    }
+
+    showError(key) {
+        pubSub.publish('messages:show', {
+            fieldName: this.fieldName,
+            formName: this.formName,
+            key: key
+        });
+    }
+
+    clearError() {
+        pubSub.publish('messages:clear', {
+            fieldName: this.fieldName,
+            formName: this.formName
+        });
     }
 
     destroy() {
-        this.subscription.remove();
+        this._fieldElem.removeEventListener('keyup', this.publish.bind(this), false);
+        this.subFieldValidate.remove();
+        this.subFieldDestroy.remove();
+        this._fieldElem = null;
+        this._validators.length = 0;
     }
 
 }

@@ -1,5 +1,6 @@
 import { pubSub } from "./utils";
 import FormField from './form-field';
+import {objType} from "./config.js";
 
 
 // This is an Event Loop
@@ -15,9 +16,9 @@ class Coordinator {
 
     subscribe() {
         let self = this;
-            this.subCoordinate = pubSub.subscribe('coordinate', (obj) => {
-            if (this.whichObject(obj) === 'FORM_FIELD') {
-                pubSub.publish('validate:field', obj.uniqueId); 
+        this.subCoordinate = pubSub.subscribe('coordinate', (obj) => {
+            if (obj.objType === objType.FIELD) {
+                pubSub.publish('field:validate', obj.uniqueId); 
             }
         }); 
     }
@@ -33,7 +34,7 @@ class Coordinator {
          // This may cause a ciruclar reference. 
          //
          // You could also do an obj.validate(), which would break the pub/sub.
-         pubSub.publish('validate:fields', obj.uniqueId);
+         pubSub.publish('field:validate', uniqueId);
     }
 
     destroy() {

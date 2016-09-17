@@ -1,15 +1,22 @@
  
 export const priorityDefault = 30;
 
-export const appPrefix = 'gt-';
+export const appPrefix = 'gt';
 
 export const  fieldQuery = {
+      prefix: `^${appPrefix}`,
       input: 'input[required]:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
       textarea: ',textarea[required]:not(:disabled):not([readonly])',
-      messages: 'gt-messages',
-      message: 'gt-message'
+      messages: `[${appPrefix}-messages]`,
+      message: `[${appPrefix}-message]`
 };
+
+export const attributes = {
+    prefix: `${appPrefix}-`,
+    messages: `${appPrefix}-messages`,
+    message: `${appPrefix}-message`
+}
 
 export const ruleTypes = {
     email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
@@ -21,14 +28,14 @@ export const ruleTypes = {
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
 }
 
-export const rules = {
+export const rules = { 
     required: {
         fn: function(value) {
           return (/\S/.test(value));
         },
         priority: 1024
       },
-      remote: {
+      remote: { 
         fn: function(value) {  },
         priority: -100
       },
@@ -52,7 +59,13 @@ export const rules = {
         priority: 512
       },
       handshake: {
-          fn: function(value) {},
+          fn: function(value) {
+            let key = this.params[0];
+            let callback = (msg) => {
+              console.log(msg);
+            };
+             window.gator.handShakes[key]('1', callback, '3');
+          },
           priority: 0
       }
 };
@@ -65,5 +78,12 @@ export const fieldState = {
     HANDSHAKE: 4,
     WAIT: 4
 };
+
+export const objType = {
+    FIELD: 0,
+    FORM: 1,
+    MESSAGE: 2 
+};
+
 
  

@@ -20,6 +20,7 @@ class Validator {
     }
 
 	isValid(value) {
+        console.log(this.key);
          return rules[this.key].fn.call(this, value);
     } 
 

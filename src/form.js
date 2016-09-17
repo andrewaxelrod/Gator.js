@@ -1,6 +1,6 @@
 import FormField from './form-field';
 import Messages from './messages';
-import * as util from "./utils.js";
+import {nl2arr} from "./utils.js";
 import {fieldQuery} from "./config.js";
 
 class Form { 
@@ -20,22 +20,21 @@ class Form {
 
     registerFormFields() {
         let self = this;
-        util.nl2arr(this.elem.querySelectorAll(
+        nl2arr(this.elem.querySelectorAll(
             fieldQuery.input+ 
             fieldQuery.select+
             fieldQuery.textarea))
                 .forEach((elem)  => {
-                    this.fields.push(new FormField(this, elem));
+                    this.fields.push(new FormField(elem, this.name));
                 });  
     }
 
     registerMessages() {
         let self = this;
-                util.nl2arr(this.elem.querySelectorAll(
-                    `[${fieldQuery.messages}]`))
-                        .forEach((elem)  => {
-                            this.messages.push(new Messages(this, elem));
-                        });  
+        nl2arr(this.elem.querySelectorAll(fieldQuery.messages))
+            .forEach((elem)  => {
+                this.messages.push(new Messages(elem));
+            });  
     }
 
     destroy() {
