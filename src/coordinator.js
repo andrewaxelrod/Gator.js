@@ -1,6 +1,6 @@
-import { pubSub } from "./utils";
+import {pubSub} from "./utils";
 import FormField from './form-field';
-import {objType} from "./config.js";
+import {objType, fieldState} from "./config.js";
 
 
 // This is an Event Loop
@@ -8,6 +8,7 @@ class Coordinator {
 
     constructor() {
         this.onInit();
+        this.handShakes = {};
     }
 
     onInit() {
@@ -17,16 +18,45 @@ class Coordinator {
     subscribe() {
         let self = this;
         this.subCoordinate = pubSub.subscribe('coordinate', (obj) => {
-            if (obj.objType === objType.FIELD) {
-                pubSub.publish('field:validate', obj.uniqueId); 
+            if(obj.objType === objType.FIELD) {
+                this.funnelField(obj);
             }
         }); 
     }
 
-    whichObject(obj) {
-        if(obj instanceof FormField) {
-            return 'FORM_FIELD';
-        }
+    funnelField(field) {
+
+
+           // Check the state of the field
+            if (field.state === fieldState.SUCCESS || field.state === fieldState.ERROR) {
+                console.log(field.fieldName + ' is already validated.');
+                return;
+            } else if (field.state === fieldState.HANDSHAKE) {
+                 console.log(field.fieldName + ' is in handshake mode.');
+              //  this.addHandShake(field);
+            } else {
+                console.log(field.fieldName + ' is in going to be validated.');
+                pubSub.publish('field:validate', field.uniqueId);
+            } 
+
+
+
+/*
+
+            if (ob.state === fieldState.HANDSHAKE) {
+                if(!this.handShakes.hasOwnProperty(obj.validation)) {
+                    this.handShakes[obj.validation] = {};
+                }
+                this.handShakes[obj.validation][obj.fieldName] = obj.fieldValue;
+            }
+
+            if (obj.objType === objType.FIELD) {
+                pubSub.publish('field:validate', obj.uniqueId); 
+            }
+
+            this.handShakes = null;
+
+            */
     }
 
     validateFields() {

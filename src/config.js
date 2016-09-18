@@ -60,11 +60,6 @@ export const rules = {
       },
       handshake: {
           fn: function(value) {
-            let key = this.params[0];
-            let callback = (msg) => {
-              console.log(msg);
-            };
-             window.gator.handShakes[key]('1', callback, '3');
           },
           priority: 0
       }
@@ -73,10 +68,10 @@ export const rules = {
 // Simple version of an Enums
 export const fieldState = {
     INIT: 0,
-    SUCCESS: 1,
-    ERROR: 2,
-    HANDSHAKE: 4,
-    WAIT: 4
+    WAIT: 1,
+    SUCCESS: 2,
+    ERROR: 4,
+    HANDSHAKE: 5
 };
 
 export const objType = {

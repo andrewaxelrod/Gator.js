@@ -7,10 +7,11 @@ class FormField {
     constructor(fieldElem, formName) { 
         this.uniqueId = getUniqueId();
         this.objType = objType.FIELD;
-        this.state = fieldState.INIT;
-
+        this.fieldState = fieldState.INIT;
         this._fieldElem = fieldElem;
         this.fieldName = fieldElem.getAttribute("name");
+        this.fieldValue =  this._fieldElem.value;
+        this.fieldValidator = null;
         this.formName = formName;
         this._validators = [];
         this.onInit();
@@ -27,11 +28,18 @@ class FormField {
     subscribe() {
         let self = this;
 
-        this.subFieldValidate = pubSub.subscribe('field:validate', (uniqueId) => {
+        this.subFieldValidate = pubSub.subscribe('field:validate:all', (field) => {
+
             // Determines if this is the field to be validated.
-            if(uniqueId === this.uniqueId) {
+            if (field.uniqueId === self.uniqueId) { 
                 self.validate();
-            }
+            } 
+            
+            // Async/Handshake Processing
+            if (self.fieldState === fieldState.HANDSHAKE) {
+                 console.log(self.fieldName + ' is in handshake mode.');
+            }  
+
         });
 
         this.subFieldDestroy = pubSub.subscribe('field:destroy', (uniqueId) => {
@@ -42,15 +50,19 @@ class FormField {
     // Only pass in info you need and don't pass by reference.
     // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
-        this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
+        this._fieldElem.addEventListener('change', this.publish.bind(this), false);
     }
 
     // Only pass in variables that you need. 
     publish() {
-        pubSub.publish('coordinate', 
+        pubSub.publish('field:validate:all', 
             {
                 uniqueId: this.uniqueId,
-                objType: this.objType
+                objType: this.objType,
+                fieldName: this.fieldName,
+                fieldState: this.fieldState,
+                fieldValue: this.fieldValue,
+                fieldValidator: this.fieldValidator
             });
     }
 
@@ -61,7 +73,6 @@ class FormField {
 
         nl2arr(this._fieldElem.attributes).forEach((attr) => {
             if( attr.name && regex.test(attr.name) && attr.specified) {
-                console.log(attr.name);
                 attribute = attr.name.slice(attributes.prefix.length);
             } else if (attr.name === 'required' && attr.specified) {
                 attribute = 'required';
@@ -84,19 +95,20 @@ class FormField {
 
     validate() {
 
-        let value = this._fieldElem.value;
-        this.state = fieldState.WAIT;
+        this.fieldValue = this._fieldElem.value;
+        this.fieldState = fieldState.WAIT;
         
         for(let validator of this._validators) {
-            if(!validator.isValid(value)) {
-                this.state = fieldState.ERROR;
+            if(!validator.isValid(this.fieldValue)) {
+                this.fieldValidator = validator;
+                this.fieldState = validator.key === 'handshake' ? fieldState.HANDSHAKE : fieldState.ERROR;
                 this.showError(validator.key);
                 return;
             }
         }
-
-       this.state = fieldState.SUCCESS;
-       this.clearError();
+        this.fieldValidator = validator;
+        this.state = fieldState.SUCCESS;
+        this.clearError();
     }
 
     showError(key) {

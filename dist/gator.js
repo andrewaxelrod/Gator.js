@@ -78,13 +78,7 @@
       priority: 512
     },
     handshake: {
-      fn: function fn(value) {
-        var key = this.params[0];
-        var callback = function callback(msg) {
-          console.log(msg);
-        };
-        window.gator.handShakes[key]('1', callback, '3');
-      },
+      fn: function fn(value) {},
       priority: 0
     }
   };
@@ -92,10 +86,10 @@
   // Simple version of an Enums
   var fieldState = exports.fieldState = {
     INIT: 0,
-    SUCCESS: 1,
-    ERROR: 2,
-    HANDSHAKE: 4,
-    WAIT: 4
+    WAIT: 1,
+    SUCCESS: 2,
+    ERROR: 4,
+    HANDSHAKE: 5
   };
 
   var objType = exports.objType = {
@@ -140,6 +134,7 @@
             _classCallCheck(this, Coordinator);
 
             this.onInit();
+            this.handShakes = {};
         }
 
         Coordinator.prototype.onInit = function onInit() {
@@ -147,18 +142,46 @@
         };
 
         Coordinator.prototype.subscribe = function subscribe() {
+            var _this = this;
+
             var self = this;
             this.subCoordinate = _utils.pubSub.subscribe('coordinate', function (obj) {
                 if (obj.objType === _config.objType.FIELD) {
-                    _utils.pubSub.publish('field:validate', obj.uniqueId);
+                    _this.funnelField(obj);
                 }
             });
         };
 
-        Coordinator.prototype.whichObject = function whichObject(obj) {
-            if (obj instanceof _formField2.default) {
-                return 'FORM_FIELD';
+        Coordinator.prototype.funnelField = function funnelField(field) {
+
+            // Check the state of the field
+            if (field.state === _config.fieldState.SUCCESS || field.state === _config.fieldState.ERROR) {
+                console.log(field.fieldName + ' is already validated.');
+                return;
+            } else if (field.state === _config.fieldState.HANDSHAKE) {
+                console.log(field.fieldName + ' is in handshake mode.');
+                //  this.addHandShake(field);
+            } else {
+                console.log(field.fieldName + ' is in going to be validated.');
+                _utils.pubSub.publish('field:validate', field.uniqueId);
             }
+
+            /*
+            
+                        if (ob.state === fieldState.HANDSHAKE) {
+                            if(!this.handShakes.hasOwnProperty(obj.validation)) {
+                                this.handShakes[obj.validation] = {};
+                            }
+                            this.handShakes[obj.validation][obj.fieldName] = obj.fieldValue;
+                        }
+            
+                        if (obj.objType === objType.FIELD) {
+                            pubSub.publish('field:validate', obj.uniqueId); 
+                        }
+            
+                        this.handShakes = null;
+            
+                        */
         };
 
         Coordinator.prototype.validateFields = function validateFields() {
@@ -192,10 +215,10 @@
         factory(mod, global.config, global.utils, global.validator);
         global.formField = mod.exports;
     }
-})(this, function (module, _config, _utils, _validator) {
+})(this, function (module, _config, _utils, _validator2) {
     "use strict";
 
-    var _validator2 = _interopRequireDefault(_validator);
+    var _validator3 = _interopRequireDefault(_validator2);
 
     function _interopRequireDefault(obj) {
         return obj && obj.__esModule ? obj : {
@@ -215,10 +238,11 @@
 
             this.uniqueId = (0, _utils.getUniqueId)();
             this.objType = _config.objType.FIELD;
-            this.state = _config.fieldState.INIT;
-
+            this.fieldState = _config.fieldState.INIT;
             this._fieldElem = fieldElem;
             this.fieldName = fieldElem.getAttribute("name");
+            this.fieldValue = this._fieldElem.value;
+            this.fieldValidator = null;
             this.formName = formName;
             this._validators = [];
             this.onInit();
@@ -232,14 +256,18 @@
         };
 
         FormField.prototype.subscribe = function subscribe() {
-            var _this = this;
-
             var self = this;
 
-            this.subFieldValidate = _utils.pubSub.subscribe('field:validate', function (uniqueId) {
+            this.subFieldValidate = _utils.pubSub.subscribe('field:validate:all', function (field) {
+
                 // Determines if this is the field to be validated.
-                if (uniqueId === _this.uniqueId) {
+                if (field.uniqueId === self.uniqueId) {
                     self.validate();
+                }
+
+                // Async/Handshake Processing
+                if (self.fieldState === _config.fieldState.HANDSHAKE) {
+                    console.log(self.fieldName + ' is in handshake mode.');
                 }
             });
 
@@ -249,13 +277,17 @@
         };
 
         FormField.prototype.listener = function listener() {
-            this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
+            this._fieldElem.addEventListener('change', this.publish.bind(this), false);
         };
 
         FormField.prototype.publish = function publish() {
-            _utils.pubSub.publish('coordinate', {
+            _utils.pubSub.publish('field:validate:all', {
                 uniqueId: this.uniqueId,
-                objType: this.objType
+                objType: this.objType,
+                fieldName: this.fieldName,
+                fieldState: this.fieldState,
+                fieldValue: this.fieldValue,
+                fieldValidator: this.fieldValidator
             });
         };
 
@@ -266,7 +298,6 @@
 
             (0, _utils.nl2arr)(this._fieldElem.attributes).forEach(function (attr) {
                 if (attr.name && regex.test(attr.name) && attr.specified) {
-                    console.log(attr.name);
                     attribute = attr.name.slice(_config.attributes.prefix.length);
                 } else if (attr.name === 'required' && attr.specified) {
                     attribute = 'required';
@@ -275,7 +306,7 @@
                 }
 
                 if (attribute) {
-                    self._validators.push(new _validator2.default(attribute, attr.value));
+                    self._validators.push(new _validator3.default(attribute, attr.value));
                 }
             });
         };
@@ -290,8 +321,8 @@
 
         FormField.prototype.validate = function validate() {
 
-            var value = this._fieldElem.value;
-            this.state = _config.fieldState.WAIT;
+            this.fieldValue = this._fieldElem.value;
+            this.fieldState = _config.fieldState.WAIT;
 
             for (var _iterator = this._validators, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
                 var _ref;
@@ -305,15 +336,16 @@
                     _ref = _i.value;
                 }
 
-                var validator = _ref;
+                var _validator = _ref;
 
-                if (!validator.isValid(value)) {
-                    this.state = _config.fieldState.ERROR;
-                    this.showError(validator.key);
+                if (!_validator.isValid(this.fieldValue)) {
+                    this.fieldValidator = _validator;
+                    this.fieldState = _validator.key === 'handshake' ? _config.fieldState.HANDSHAKE : _config.fieldState.ERROR;
+                    this.showError(_validator.key);
                     return;
                 }
             }
-
+            this.fieldValidator = validator;
             this.state = _config.fieldState.SUCCESS;
             this.clearError();
         };
@@ -694,7 +726,6 @@
         };
 
         Validator.prototype.isValid = function isValid(value) {
-            console.log(this.key);
             return _config.rules[this.key].fn.call(this, value);
         };
 
