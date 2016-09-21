@@ -12,7 +12,6 @@ class Messages {
     }
 
     onInit() {
-        console.log(attributes);
         let attrs = this._msgsElem.getAttribute(attributes.messages).split('.');
         this.formName = attrs[0];
         this.fieldName = attrs[1];

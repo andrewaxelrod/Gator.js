@@ -45,3 +45,15 @@ export function getUniqueId() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
     s4() + '-' + s4() + s4() + s4();
 }
+
+export function isString(str) {
+
+}
+
+export function isObject(obj) {
+
+}
+
+export function isArray(arr) {
+  
+}

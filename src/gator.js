@@ -1,11 +1,11 @@
 import Form from './form';
-import Coordinator from './coordinator';
+import Handshake from './handshake';
 
 class Gator { 
  
     constructor() { 
         var elem = document.getElementById('customerForm');
-        var coord = Coordinator;  
+        var handshake = Handshake;  
         var elemForm = new Form(elem);
 
         this.handShakes = {}; 

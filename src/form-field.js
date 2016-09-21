@@ -29,17 +29,24 @@ class FormField {
         let self = this;
 
         this.subFieldValidate = pubSub.subscribe('field:validate:all', (field) => {
-
+     
             // Determines if this is the field to be validated.
-            if (field.uniqueId === self.uniqueId) { 
+            if(field.uniqueId === self.uniqueId) { 
                 self.validate();
-            } 
-            
-            // Async/Handshake Processing
+            }
+ 
+            // Check if field is in handshake mode.
             if (self.fieldState === fieldState.HANDSHAKE) {
-                 console.log(self.fieldName + ' is in handshake mode.');
+                   pubSub.publish('handshake:run', 
+                    {
+                        uniqueId: this.uniqueId,
+                        objType: this.objType,
+                        fieldName: this.fieldName,
+                        fieldState: this.fieldState,
+                        fieldValue: this.fieldValue,
+                        fieldValidator: this.fieldValidator
+                    });
             }  
-
         });
 
         this.subFieldDestroy = pubSub.subscribe('field:destroy', (uniqueId) => {
@@ -50,7 +57,7 @@ class FormField {
     // Only pass in info you need and don't pass by reference.
     // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
-        this._fieldElem.addEventListener('change', this.publish.bind(this), false);
+        this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
     }
 
     // Only pass in variables that you need. 
@@ -100,14 +107,14 @@ class FormField {
         
         for(let validator of this._validators) {
             if(!validator.isValid(this.fieldValue)) {
-                this.fieldValidator = validator;
                 this.fieldState = validator.key === 'handshake' ? fieldState.HANDSHAKE : fieldState.ERROR;
+                this.fieldValidator = validator;
                 this.showError(validator.key);
                 return;
             }
         }
         this.fieldValidator = validator;
-        this.state = fieldState.SUCCESS;
+        this.fieldState = fieldState.SUCCESS;
         this.clearError();
     }
 
