@@ -1,102 +1,95 @@
 import {pubSub} from "./utils";
 import FormField from './form-field';
-import {objType, fieldState} from "./config.js";
-
-
-let validateEmailAndPassword =  {
-        fn: (fields, callback) => { console.log(fields); callback() },
-        fields: ['a', 'b']
-};
-let validateEmailAndPassword2 =  {
-        fn: (fields, callback) => { console.log(fields); callback() },
-        fields: ['aa', 'bb']
-};
+import {rules, objType, fieldState} from "./config.js";
 
 // This is an Event Loop
 class Handshake {
 
     constructor() {
-        this.onInit();
-
-        let callback = this.callback;
-        let fields = 'safdsaf';
-
-        this._handshakes = {
-            validateEmailAndPassword: {
-                fn: (fields, callback) => { console.log(fields); callback(); },
-                fields: 'abcd'
-            }     
-        };
+        this._handshakes = {};
+        this.init();
     }
  
-    onInit() {
+    init() {
         this.subscribe();
     }
 
-
-    callback() {
-         console.log(this);
-    }
-
     subscribe() {
-        let self = this;
-        this.subCoordinate = pubSub.subscribe('handshake:add', (obj) => {
-            
-        }); 
-        this.subCoordinate = pubSub.subscribe('handshake:run', (obj) => {
-           
-           let handshakeName = obj.fieldValidator.params[0],
-                fieldName = obj.fieldName,
-                fieldValue = obj.fieldValue;
-
-      //   console.log(handshakeName+ ' ' +fieldName+' '+fieldValue);
-
-       //  self._handshakes[handshakeName].fn();
-
-        validateEmailAndPassword.fn(validateEmailAndPassword.fields, self.callback.bind(validateEmailAndPassword));
-    
-        }); 
+        this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this, obj));
+        this.subExecute = pubSub.subscribe('handshake:addField', this.addField.bind(this, obj)); 
+        this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this, obj)); 
+        this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this, obj)); 
     }
 
-    addHandshake(event, field) {
-         if(obj.handshake)  {
-             this._handshakes[event].fields.push(field)
-         }
+    register(obj) {
+        if(!_handshakes.hasOwnProperty(obj.key)) {
+            this._handshakes[obj.key] = {
+                fields: {},
+                key: obj.key
+            }; 
+        }
     }
 
-    clearHandshakes() {
-
+    addField(obj) {
+        this.register(obj);
+        this._handshakes[obj.key].fields[obj.fieldName] = {
+            uniqueId: obj.uniqueId,
+            value: obj.fieldValue,
+            ready: false
+        };
     }
 
-    runHandshakes() {
+    setFieldReady(key, fieldName, value) {
+        let field = this._handshakes[key].fields[fieldName];
+        field.value = value;
+        field.ready = true;
+    }
+
+    fieldsReady(key) {
+        let fields = this._handshakes[key].fields;
+        for(let field in fields)  {
+            if(fields.hasOwnProperty(field)) {
+                if(!field.ready) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    execute(obj) {
+        // Update Field
+        this.setFieldReady(obj.key, obj.fieldName, obj.fieldvalue);
+        // Are all fields in handshake mode?
+        if(this.fieldsReady(obj.key)) {
+                // Execute Function
+                rules[obj.key].fn(this._handshakes[key]._handshake,  
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackError'));
+        }
+    }
+
+    callback(event) {
+          for(let field in this.fields) {
+            if(this.fields.hasOwnProperty(field)) {
+                pubSub.publish(event, {
+                    uniqueId: fields.uniqueId,
+                    key: this.key
+                }); 
+            }
+        }
+    }
+
+    reset() {
 
     }
 
     destroy() {
-        this.subCoordinate.remove();
-    }
-
-    resolve() {
-
+        this.subRegister.remove();
+        this.subExecute.remove();
+        this.subExecute.remove();
+        this.subReset.remove();
     }
 }
 
 module.exports = new Handshake;
-
-/*
-validateEmail = {
-    fn: () => {
-        
-         return (self.fields, self.resolve, self.reject) => {
-
-
-         }
-    },
-    fields: {
-        email: 'andrew@gmail.com',
-        password: 'helloworld123'
-    }
-}
- 
-*/
-

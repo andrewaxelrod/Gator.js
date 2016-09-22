@@ -1,4 +1,4 @@
-import {objType, fieldState, attributes, fieldQuery} from "./config.js";
+import {objType, fieldState, validatorState, attributes, fieldQuery} from "./config.js";
 import {getUniqueId, nl2arr, pubSub} from "./utils.js";
 import Validator from "./validator"
 
@@ -26,51 +26,54 @@ class FormField {
     }
 
     subscribe() {
-        let self = this;
+        this.subCBSuccess = pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));   
+        this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));     
+    }
 
-        this.subFieldValidate = pubSub.subscribe('field:validate:all', (field) => {
-     
-            // Determines if this is the field to be validated.
-            if(field.uniqueId === self.uniqueId) { 
-                self.validate();
-            }
- 
-            // Check if field is in handshake mode.
-            if (self.fieldState === fieldState.HANDSHAKE) {
-                   pubSub.publish('handshake:run', 
-                    {
-                        uniqueId: this.uniqueId,
-                        objType: this.objType,
-                        fieldName: this.fieldName,
-                        fieldState: this.fieldState,
-                        fieldValue: this.fieldValue,
-                        fieldValidator: this.fieldValidator
-                    });
-            }  
-        });
+    callbackSuccess(obj) {
+        if(this.uniqueId === obj.uniqueId) {
+            this.clearError();
+        }
+    }
 
-        this.subFieldDestroy = pubSub.subscribe('field:destroy', (uniqueId) => {
-            self.destroy();
-        });
+    callbackError(obj) {
+        if(this.uniqueId === obj.uniqueId) {
+            this.showError(obj.key);
+        }
     }
 
     // Only pass in info you need and don't pass by reference.
     // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
-        this._fieldElem.addEventListener('keyup', this.publish.bind(this), false);
+        this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
     }
 
-    // Only pass in variables that you need. 
-    publish() {
-        pubSub.publish('field:validate:all', 
-            {
-                uniqueId: this.uniqueId,
-                objType: this.objType,
-                fieldName: this.fieldName,
-                fieldState: this.fieldState,
-                fieldValue: this.fieldValue,
-                fieldValidator: this.fieldValidator
-            });
+    disable() {
+        this._fieldElem.disabled = true;
+    }
+
+    enable() {
+        this._fieldElem.disabled = false;
+    }
+
+    validate() {
+        this.fieldValue = this._fieldElem.value;
+        this.fieldState = fieldState.WAIT;
+         for(let validator of this._validators) {
+             validator.validate(this.fieldValue);
+             if(validator.state === validatorState.ERROR) {
+                this.showError(validator.key);
+                this.fieldState = fieldState.ERROR;
+                return;
+             } else if (validator.state === validatorState.HANDSHAKE) {
+                this.clearError();
+                this.fieldState = fieldState.HANDSHAKE;
+                return;
+             }
+         }   
+        this.fieldValidator = validator;
+        this.fieldState = fieldState.SUCCESS;
+        this.clearError();
     }
 
     registerValidators() {
@@ -88,7 +91,7 @@ class FormField {
             }
           
             if(attribute) {
-                self._validators.push(new Validator(attribute, attr.value));
+                self._validators.push(new Validator(attribute, attr.value), this.fieldName, this.uniqueId);
             } 
            
         });
@@ -99,24 +102,7 @@ class FormField {
             this._validators.sort((a, b) =>  b.priority - a.priority);
         }
     }
-
-    validate() {
-
-        this.fieldValue = this._fieldElem.value;
-        this.fieldState = fieldState.WAIT;
-        
-        for(let validator of this._validators) {
-            if(!validator.isValid(this.fieldValue)) {
-                this.fieldState = validator.key === 'handshake' ? fieldState.HANDSHAKE : fieldState.ERROR;
-                this.fieldValidator = validator;
-                this.showError(validator.key);
-                return;
-            }
-        }
-        this.fieldValidator = validator;
-        this.fieldState = fieldState.SUCCESS;
-        this.clearError();
-    }
+ 
 
     showError(key) {
         pubSub.publish('messages:show', {
@@ -134,9 +120,9 @@ class FormField {
     }
 
     destroy() {
-        this._fieldElem.removeEventListener('keyup', this.publish.bind(this), false);
-        this.subFieldValidate.remove();
-        this.subFieldDestroy.remove();
+        this._fieldElem.removeEventListener('keyup', this.validate.bind(this), false);
+        this.subCBSuccess.remove();
+        this.subCBError.remove();
         this._fieldElem = null;
         this._validators.length = 0;
     }

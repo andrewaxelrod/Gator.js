@@ -33,36 +33,63 @@ export const rules = {
         fn: function(value) {
           return (/\S/.test(value));
         },
-        priority: 1024
-      },
-      remote: { 
-        fn: function(value) {  },
-        priority: -100
-      },
+        priority: 1024,
+        handshake: false
+      }, 
       type: {
         fn: function(value) {
           var regex = ruleTypes[this.params[0]];
           return regex.test(value);
         },
-        priority: 256
+        priority: 256,
+        handshake: false
       },
       minlength: {
         fn: function(value) {
            return value.length >= this.params[0]
         },
-        priority: 512
+        priority: 512,
+        handshake: false
       },
       maxlength: {
         fn: function(value) {
            return value.length <= this.params[0]
         },
-        priority: 512
+        priority: 512,
+        handshake: false
       },
       handshake: {
-          fn: function(value) {
-          },
-          priority: 0
-      }
+        fn: function(fields, success, error) {
+          console.log('Inside handshake');
+          error();
+        },
+        priority: 0,
+        handshake: true
+      },
+      group: {
+        fn: function(fields) {
+          for(let field of fields) {
+            if(field.value) {
+              return true;
+            }
+          }
+          return false;
+        },
+        priority: 0,
+        handshake: true
+      },
+      groupAll: {
+        fn: function(fields) {
+          for(let field of fields) {
+            if(!field.value) {
+              return false;
+            }
+          }
+          return true;
+        },
+        priority: 0,
+        handshake: true
+      },
 };
 
 // Simple version of an Enums
@@ -74,11 +101,16 @@ export const fieldState = {
     HANDSHAKE: 5
 };
 
+// Simple version of an Enums
+export const validatorState = {
+    INIT: 0,
+    SUCCESS: 1,
+    ERROR: 2,
+    HANDSHAKE: 3
+};
+
 export const objType = {
     FIELD: 0,
     FORM: 1,
     MESSAGE: 2 
 };
-
-
- 
