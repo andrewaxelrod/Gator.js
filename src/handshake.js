@@ -8,6 +8,7 @@ class Handshake {
     constructor() {
         this._handshakes = {};
         this.init();
+        window.hs = this._handshakes;
     }
  
     init() {
@@ -15,14 +16,14 @@ class Handshake {
     }
 
     subscribe() {
-        this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this, obj));
-        this.subExecute = pubSub.subscribe('handshake:addField', this.addField.bind(this, obj)); 
-        this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this, obj)); 
-        this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this, obj)); 
+        this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this));
+        this.subExecute = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
+        this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this)); 
+        this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
     }
 
     register(obj) {
-        if(!_handshakes.hasOwnProperty(obj.key)) {
+        if(!this._handshakes.hasOwnProperty(obj.key)) {
             this._handshakes[obj.key] = {
                 fields: {},
                 key: obj.key
@@ -34,7 +35,7 @@ class Handshake {
         this.register(obj);
         this._handshakes[obj.key].fields[obj.fieldName] = {
             uniqueId: obj.uniqueId,
-            value: obj.fieldValue,
+            value: null,
             ready: false
         };
     }
@@ -49,23 +50,24 @@ class Handshake {
         let fields = this._handshakes[key].fields;
         for(let field in fields)  {
             if(fields.hasOwnProperty(field)) {
-                if(!field.ready) {
+                if(!fields[field].ready) {
                     return false;
                 }
             }
         }
         return true;
-    }
+    } 
 
     execute(obj) {
         // Update Field
-        this.setFieldReady(obj.key, obj.fieldName, obj.fieldvalue);
+        this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
         // Are all fields in handshake mode?
         if(this.fieldsReady(obj.key)) {
                 // Execute Function
-                rules[obj.key].fn(this._handshakes[key]._handshake,  
+                rules[obj.key].fn(this._handshakes[obj.key].fields,
                                 this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  
-                                this.callback.bind(this._handshakes[obj.key], 'field:callbackError'));
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackError'),
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackIgnore'));
         }
     }
 
@@ -73,7 +75,7 @@ class Handshake {
           for(let field in this.fields) {
             if(this.fields.hasOwnProperty(field)) {
                 pubSub.publish(event, {
-                    uniqueId: fields.uniqueId,
+                    uniqueId: this.fields[field].uniqueId,
                     key: this.key
                 }); 
             }

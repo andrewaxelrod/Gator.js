@@ -5,7 +5,7 @@ export const appPrefix = 'gt';
 
 export const  fieldQuery = {
       prefix: `^${appPrefix}`,
-      input: 'input[required]:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
+      input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
       textarea: ',textarea[required]:not(:disabled):not([readonly])',
       messages: `[${appPrefix}-messages]`,
@@ -43,7 +43,7 @@ export const rules = {
         },
         priority: 256,
         handshake: false
-      },
+      }, 
       minlength: {
         fn: function(value) {
            return value.length >= this.params[0]
@@ -66,14 +66,42 @@ export const rules = {
         priority: 0,
         handshake: true
       },
-      group: {
-        fn: function(fields) {
-          for(let field of fields) {
-            if(field.value) {
-              return true;
+      all: {
+        fn: function(fields, success, error) {
+          for(let field in fields) {
+            if(!fields[field].value) {
+              error();
+              return;
             }
           }
-          return false;
+          success();
+        },
+        priority: 0,
+        handshake: true 
+      },
+      one: {
+        fn: function(fields, success, error) {
+          for(let field in fields) {
+            if(fields[field].value) {
+              success();
+              return;
+            }
+          }
+          error();
+        },
+        priority: 0,
+        handshake: true 
+      },
+      same: {
+        fn: function(fields, success, error) {
+          let ref = fields[Object.keys(fields)[0]];
+          for(let field in fields) {
+             if(fields[field].value !== ref.value) {
+              error();
+              return; 
+             }
+          }
+          success(); 
         },
         priority: 0,
         handshake: true
@@ -90,6 +118,20 @@ export const rules = {
         priority: 0,
         handshake: true
       },
+      custom: {
+        fn: function(fields, success, error, ignore) {
+          if(fields.email.value && fields.password.value) {
+            success()
+          } else if (!fields.email.value && !fields.password.value) {
+            error();
+          } else {
+            ignore(); 
+          }
+           
+        },
+        priority: 0,
+        handshake: true 
+      }
 };
 
 // Simple version of an Enums

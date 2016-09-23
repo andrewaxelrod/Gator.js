@@ -1,4 +1,5 @@
 import {rules, validatorState} from './config';
+import {pubSub} from './utils'; 
 
 class Validator { 
  
@@ -21,7 +22,7 @@ class Validator {
             throw new Error(`Invalid directive, "gt-${this.key}"`);
         }
         this.priority = rules[this.key].priority;
-    }
+    } 
 
     setHandshake() {
         let self = this;
@@ -35,15 +36,10 @@ class Validator {
     }
 
 	validate(value) {
+        console.log(value);
         let self = this,
             rule = rules[this.key];
         if(rule.handshake === true) {
-            pubSub.publish('handshake:execute', { 
-                key: self.key,
-                fieldName: self.fieldName,
-                fieldValue: self.fieldValue,
-                uniqueId: self.fieldUniqueId
-            });
             this.state = validatorState.HANDSHAKE;
         } else {
             this.state = rule.fn.call(this, value) ? validatorState.SUCCESS : validatorState.ERROR;

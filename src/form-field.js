@@ -27,36 +27,50 @@ class FormField {
 
     subscribe() {
         this.subCBSuccess = pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));   
-        this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));     
+        this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
+        this.subCBIgnore = pubSub.subscribe('field:callbackIgnore', this.callbackIgnore.bind(this));       
     }
 
     callbackSuccess(obj) {
+ 
         if(this.uniqueId === obj.uniqueId) {
             this.clearError();
+            this.enable();
         }
     }
 
     callbackError(obj) {
-        if(this.uniqueId === obj.uniqueId) {
+         
+        if(this.uniqueId === obj.uniqueId) {     
+            this.enable();
             this.showError(obj.key);
+            this.fieldState = validatorState.ERROR;
+        }
+    }
+
+     callbackIgnore(obj) {
+         
+        if(this.uniqueId === obj.uniqueId) {     
+            this.enable();
         }
     }
 
     // Only pass in info you need and don't pass by reference.
     // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
-        this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
+       this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
     }
 
     disable() {
-        this._fieldElem.disabled = true;
+      this._fieldElem.disabled = true;
     }
-
+ 
     enable() {
-        this._fieldElem.disabled = false;
+       this._fieldElem.disabled = false;
     }
 
-    validate() {
+    validate() { 
+       
         this.fieldValue = this._fieldElem.value;
         this.fieldState = fieldState.WAIT;
          for(let validator of this._validators) {
@@ -66,8 +80,15 @@ class FormField {
                 this.fieldState = fieldState.ERROR;
                 return;
              } else if (validator.state === validatorState.HANDSHAKE) {
+                this.disable();
                 this.clearError();
                 this.fieldState = fieldState.HANDSHAKE;
+                pubSub.publish('handshake:execute', { 
+                    key: validator.key,
+                    fieldName: this.fieldName,
+                    fieldValue: this.fieldValue,
+                    uniqueId: self.uniqueId
+                });
                 return;
              }
          }   
@@ -91,7 +112,7 @@ class FormField {
             }
           
             if(attribute) {
-                self._validators.push(new Validator(attribute, attr.value), this.fieldName, this.uniqueId);
+                self._validators.push(new Validator(attribute, attr.value, this.fieldName, this.uniqueId));
             } 
            
         });
