@@ -1,4 +1,27 @@
  
+// Simple version of an Enums
+export const fieldState = {
+    INIT: 0,
+    WAIT: 1,
+    SUCCESS: 2,
+    ERROR: 4,
+    HANDSHAKE: 5
+};
+
+// Simple version of an Enums
+export const validatorState = {
+    INIT: 0,
+    SUCCESS: 1,
+    ERROR: 2,
+    HANDSHAKE: 3
+};
+
+export const objType = {
+    FIELD: 0,
+    FORM: 1,
+    MESSAGE: 2 
+};
+
 export const priorityDefault = 30;
 
 export const appPrefix = 'gt';
@@ -120,39 +143,28 @@ export const rules = {
       },
       custom: {
         fn: function(fields, success, error, ignore) {
-          if(fields.email.value && fields.password.value) {
+          if(fields.email.isType('email')) {
             success()
-          } else if (!fields.email.value && !fields.password.value) {
+          } else  {
             error();
-          } else {
-            ignore(); 
-          }
+          }  
+          
            
         },
         priority: 0,
-        handshake: true 
+        handshake: true,
+        required: false 
+      },
+     custom2: {
+        fn: function(fields, success, error, ignore, ajax) {
+
+          
+         
+           
+        },
+        priority: 0,
+        handshake: true,
+        required: false 
       }
 };
-
-// Simple version of an Enums
-export const fieldState = {
-    INIT: 0,
-    WAIT: 1,
-    SUCCESS: 2,
-    ERROR: 4,
-    HANDSHAKE: 5
-};
-
-// Simple version of an Enums
-export const validatorState = {
-    INIT: 0,
-    SUCCESS: 1,
-    ERROR: 2,
-    HANDSHAKE: 3
-};
-
-export const objType = {
-    FIELD: 0,
-    FORM: 1,
-    MESSAGE: 2 
-};
+ 

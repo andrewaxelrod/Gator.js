@@ -1,3 +1,649 @@
-!function(t){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=t();else if("function"==typeof define&&define.amd)define([],t);else{var e;e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this,e.Gator=t()}}(function(){var t,e,i;return function t(e,i,n){function r(s,f){if(!i[s]){if(!e[s]){var a="function"==typeof require&&require;if(!f&&a)return a(s,!0);if(o)return o(s,!0);var u=new Error("Cannot find module '"+s+"'");throw u.code="MODULE_NOT_FOUND",u}var l=i[s]={exports:{}};e[s][0].call(l.exports,function(t){var i=e[s][1][t];return r(i?i:t)},l,l.exports,t,e,i,n)}return i[s].exports}for(var o="function"==typeof require&&require,s=0;s<n.length;s++)r(n[s]);return r}({1:[function(e,i,n){!function(e,i){if("function"==typeof t&&t.amd)t(["exports"],i);else if("undefined"!=typeof n)i(n);else{var r={exports:{}};i(r.exports),e.config=r.exports}}(this,function(t){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var e=t.priorityDefault=30,i=t.appPrefix="gt-",n=t.fieldQuery={input:"input[required]:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])",select:",select[required]:not(:disabled):not([readonly])",textarea:",textarea[required]:not(:disabled):not([readonly])"},r=t.ruleTypes={email:/^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,number:/^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,integer:/^-?\d+$/,digits:/\d+$/,alphanum:/^\w+$/i,date:/^(\d{4})-(\d{2})-(\d{2})$/,url:/^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/},o=t.rules={required:{fn:function t(e){return/\S/.test(e)},priority:1024},remote:{fn:function t(e){},priority:-100},type:{fn:function t(e){var i=r[this.params[0]];return i.test(e)},priority:256},minlength:{fn:function t(e){return e.length>=this.params[0]},priority:512},maxlength:{fn:function t(e){return e.length<=this.params[0]},priority:512}}})},{}],2:[function(e,i,n){!function(r,o){if("function"==typeof t&&t.amd)t(["module","./config.js","./utils.js","./validator"],o);else if("undefined"!=typeof n)o(i,e("./config.js"),e("./utils.js"),e("./validator"));else{var s={exports:{}};o(s,r.config,r.utils,r.validator),r.formField=s.exports}}(this,function(t,e,i,n){"use strict";function r(t){return t&&t.__esModule?t:{default:t}}function o(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}var s=r(n),f=function(){function t(e){o(this,t),this.elem=e,this.name=this.elem.getAttribute("name"),this.validators=[],this.valid=!0,this.validatorKey=null,this.onInit()}return t.prototype.onInit=function t(){this.registerValidators(),this.prioritizeValidators(),this.listener()},t.prototype.listener=function t(){var e=this;this.elem.addEventListener("keydown",function(){e.validate()})},t.prototype.registerValidators=function t(){var n=this,r=null,o=new RegExp("^"+e.appPrefix,"i");(0,i.nl2arr)(this.elem.attributes).forEach(function(t){r=t.name&&o.test(t.name)&&t.specified?t.name.slice(e.appPrefix.length):"required"===t.name&&t.specified?"required":null,r&&n.validators.push(new s.default(r,t.value))})},t.prototype.prioritizeValidators=function t(){this.validators.length&&this.validators.sort(function(t,e){return e.priority-t.priority})},t.prototype.validate=function t(){var e=this.elem.value;this.valid=!0,this.validatorKey=null;for(var i=this.validators,n=Array.isArray(i),r=0,i=n?i:i[Symbol.iterator]();;){var o;if(n){if(r>=i.length)break;o=i[r++]}else{if(r=i.next(),r.done)break;o=r.value}var s=o;if(!s.isValid(e)){this.valid=!1,this.validatorKey=s.key;break}}},t}();t.exports=f})},{"./config.js":1,"./utils.js":5,"./validator":6}],3:[function(e,i,n){!function(r,o){if("function"==typeof t&&t.amd)t(["module","./form-field","./utils.js","./config.js"],o);else if("undefined"!=typeof n)o(i,e("./form-field"),e("./utils.js"),e("./config.js"));else{var s={exports:{}};o(s,r.formField,r.utils,r.config),r.form=s.exports}}(this,function(t,e,i,n){"use strict";function r(t){if(t&&t.__esModule)return t;var e={};if(null!=t)for(var i in t)Object.prototype.hasOwnProperty.call(t,i)&&(e[i]=t[i]);return e.default=t,e}function o(t){return t&&t.__esModule?t:{default:t}}function s(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}var f=o(e),a=r(i),u=function(){function t(e){s(this,t),this._form=e,this._fields=[],this.onInit()}return t.prototype.onInit=function t(){this.registerFormFields()},t.prototype.registerFormFields=function t(){var e=this,i=this;a.nl2arr(this._form.querySelectorAll(n.fieldQuery.input+n.fieldQuery.select+n.fieldQuery.textarea)).forEach(function(t){e._fields.push(new f.default(t))})},t}();t.exports=u})},{"./config.js":1,"./form-field":2,"./utils.js":5}],4:[function(e,i,n){!function(r,o){if("function"==typeof t&&t.amd)t(["module","./form"],o);else if("undefined"!=typeof n)o(i,e("./form"));else{var s={exports:{}};o(s,r.form),r.gator=s.exports}}(this,function(t,e){"use strict";function i(t){return t&&t.__esModule?t:{default:t}}function n(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}var r=i(e),o=function t(){n(this,t);var e=document.getElementById("customerForm");window.form=new r.default(e),console.log(window.form)};t.exports=o})},{"./form":3}],5:[function(e,i,n){!function(e,i){if("function"==typeof t&&t.amd)t(["exports"],i);else if("undefined"!=typeof n)i(n);else{var r={exports:{}};i(r.exports),e.utils=r.exports}}(this,function(t){"use strict";function e(t){return Array.prototype.slice.call(t)}Object.defineProperty(t,"__esModule",{value:!0}),t.nl2arr=e;var i=t.pubSub=function(){var t={},e=t.hasOwnProperty;return{subscribe:function i(n,r){e.call(t,n)||(t[n]=[]);var o=t[n].push(r)-1;return{remove:function e(){delete t[n][o]}}},publish:function i(n,r){e.call(t,n)&&
-// Cycle through topics queue, fire!
-t[n].forEach(function(t){t(void 0!=r?r:{})})}}}()})},{}],6:[function(e,i,n){!function(r,o){if("function"==typeof t&&t.amd)t(["module","./config"],o);else if("undefined"!=typeof n)o(i,e("./config"));else{var s={exports:{}};o(s,r.config),r.validator=s.exports}}(this,function(t,e){"use strict";function i(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}var n=function(){function t(n,r){i(this,t),this.key=n,this.params=r.split(","),this.priority=e.rules[n].priority}return t.prototype.isValid=function t(i){return e.rules[this.key].fn.call(this,i)},t}();t.exports=n})},{"./config":1}]},{},[4])(4)});
+ 
+export const priorityDefault = 30;
+
+export const appPrefix = 'gt';
+
+export const  fieldQuery = {
+      prefix: `^${appPrefix}`,
+      input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
+      select: ',select[required]:not(:disabled):not([readonly])',
+      textarea: ',textarea[required]:not(:disabled):not([readonly])',
+      messages: `[${appPrefix}-messages]`,
+      message: `[${appPrefix}-message]`
+};
+
+export const attributes = {
+    prefix: `${appPrefix}-`,
+    messages: `${appPrefix}-messages`,
+    message: `${appPrefix}-message`
+}
+
+export const ruleTypes = {
+    email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
+    number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
+    integer: /^-?\d+$/,
+    digits: /\d+$/,
+    alphanum: /^\w+$/i,
+    date: /^(\d{4})-(\d{2})-(\d{2})$/,
+    url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
+}
+
+export const rules = { 
+    required: {
+        fn: function(value) {
+          return (/\S/.test(value));
+        },
+        priority: 1024,
+        handshake: false
+      }, 
+      type: {
+        fn: function(value) {
+          var regex = ruleTypes[this.params[0]];
+          return regex.test(value);
+        },
+        priority: 256,
+        handshake: false
+      }, 
+      minlength: {
+        fn: function(value) {
+           return value.length >= this.params[0]
+        },
+        priority: 512,
+        handshake: false
+      },
+      maxlength: {
+        fn: function(value) {
+           return value.length <= this.params[0]
+        },
+        priority: 512,
+        handshake: false
+      },
+      handshake: {
+        fn: function(fields, success, error) {
+          console.log('Inside handshake');
+          error();
+        },
+        priority: 0,
+        handshake: true
+      },
+      all: {
+        fn: function(fields, success, error) {
+          for(let field in fields) {
+            if(!fields[field].value) {
+              error();
+              return;
+            }
+          }
+          success();
+        },
+        priority: 0,
+        handshake: true 
+      },
+      one: {
+        fn: function(fields, success, error) {
+          for(let field in fields) {
+            if(fields[field].value) {
+              success();
+              return;
+            }
+          }
+          error();
+        },
+        priority: 0,
+        handshake: true 
+      },
+      same: {
+        fn: function(fields, success, error) {
+          let ref = fields[Object.keys(fields)[0]];
+          for(let field in fields) {
+             if(fields[field].value !== ref.value) {
+              error();
+              return; 
+             }
+          }
+          success(); 
+        },
+        priority: 0,
+        handshake: true
+      },
+      groupAll: {
+        fn: function(fields) {
+          for(let field of fields) {
+            if(!field.value) {
+              return false;
+            }
+          }
+          return true;
+        },
+        priority: 0,
+        handshake: true
+      },
+      custom: {
+        fn: function(fields, success, error, ignore) {
+          if(fields.email.isEmail()) {
+            success()
+          } else  {
+            error();
+          }  
+          
+           
+        },
+        priority: 0,
+        handshake: true,
+        required: false 
+      },
+     custom2: {
+        fn: function(fields, success, error, ignore, ajax) {
+
+          
+         
+           
+        },
+        priority: 0,
+        handshake: true,
+        required: false 
+      }
+};
+ 
+// Simple version of an Enums
+export const fieldState = {
+    INIT: 0,
+    WAIT: 1,
+    SUCCESS: 2,
+    ERROR: 4,
+    HANDSHAKE: 5
+};
+
+// Simple version of an Enums
+export const validatorState = {
+    INIT: 0,
+    SUCCESS: 1,
+    ERROR: 2,
+    HANDSHAKE: 3
+};
+
+export const objType = {
+    FIELD: 0,
+    FORM: 1,
+    MESSAGE: 2 
+};
+import {objType, fieldState, validatorState, attributes, fieldQuery} from "./config.js";
+import {getUniqueId, nl2arr, pubSub} from "./utils.js";
+import Validator from "./validator"
+
+class FormField { 
+ 
+    constructor(fieldElem, formName) { 
+        this.uniqueId = getUniqueId();
+        this.objType = objType.FIELD;
+        this.fieldState = fieldState.INIT;
+        this._fieldElem = fieldElem;
+        this.fieldName = fieldElem.getAttribute("name");
+        this.fieldValue =  this._fieldElem.value;
+        this.fieldValidator = null;
+        this.formName = formName;
+        this._validators = [];
+        this.onInit();
+    } 
+
+    onInit() {
+        this.registerValidators();
+        this.prioritizeValidators();
+        this.subscribe();
+        this.listener();
+       
+    }
+
+    subscribe() {
+        this.subCBSuccess = pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));   
+        this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
+        this.subCBIgnore = pubSub.subscribe('field:callbackIgnore', this.callbackIgnore.bind(this));       
+    }
+
+    callbackSuccess(obj) {
+ 
+        if(this.uniqueId === obj.uniqueId) {
+            this.clearError();
+            this.enable();
+        }
+    }
+
+    callbackError(obj) {
+         
+        if(this.uniqueId === obj.uniqueId) {     
+            this.enable();
+            this.showError(obj.key);
+            this.fieldState = validatorState.ERROR;
+        }
+    }
+
+     callbackIgnore(obj) {
+         
+        if(this.uniqueId === obj.uniqueId) {     
+            this.enable();
+        }
+    }
+
+    // Only pass in info you need and don't pass by reference.
+    // Bug fix - Add change to the event list for copy and paste fields.
+    listener() {
+       this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
+    }
+
+    disable() {
+      this._fieldElem.disabled = true;
+    }
+ 
+    enable() {
+       this._fieldElem.disabled = false;
+    }
+
+    validate() { 
+       
+        this.fieldValue = this._fieldElem.value;
+        this.fieldState = fieldState.WAIT;
+         for(let validator of this._validators) {
+             validator.validate(this.fieldValue);
+             if(validator.state === validatorState.ERROR) {
+                this.showError(validator.key);
+                this.fieldState = fieldState.ERROR;
+                return;
+             } else if (validator.state === validatorState.HANDSHAKE) {
+                this.disable();
+                this.clearError();
+                this.fieldState = fieldState.HANDSHAKE;
+                pubSub.publish('handshake:execute', { 
+                    key: validator.key,
+                    fieldName: this.fieldName,
+                    fieldValue: this.fieldValue,
+                    uniqueId: self.uniqueId
+                });
+                return;
+             }
+         }   
+        this.fieldValidator = validator;
+        this.fieldState = fieldState.SUCCESS;
+        this.clearError();
+    }
+
+    registerValidators() {
+        let self = this,
+            attribute = null,
+            regex = new RegExp(fieldQuery.prefix, 'i');
+
+        nl2arr(this._fieldElem.attributes).forEach((attr) => {
+            if( attr.name && regex.test(attr.name) && attr.specified) {
+                attribute = attr.name.slice(attributes.prefix.length);
+            } else if (attr.name === 'required' && attr.specified) {
+                attribute = 'required';
+            } else {
+                attribute = null;
+            }
+          
+            if(attribute) {
+                self._validators.push(new Validator(attribute, attr.value, this.fieldName, this.uniqueId));
+            } 
+           
+        });
+    }
+
+    prioritizeValidators() {
+        if(this._validators.length) {
+            this._validators.sort((a, b) =>  b.priority - a.priority);
+        }
+    }
+ 
+
+    showError(key) {
+        pubSub.publish('messages:show', {
+            fieldName: this.fieldName,
+            formName: this.formName,
+            key: key
+        });
+    }
+
+    clearError() {
+        pubSub.publish('messages:clear', {
+            fieldName: this.fieldName,
+            formName: this.formName
+        });
+    }
+
+    destroy() {
+        this._fieldElem.removeEventListener('keyup', this.validate.bind(this), false);
+        this.subCBSuccess.remove();
+        this.subCBError.remove();
+        this._fieldElem = null;
+        this._validators.length = 0;
+    }
+
+}
+
+module.exports = FormField;
+import Form from './form';
+import Handshake from './handshake';
+
+class Gator { 
+ 
+    constructor() { 
+        var elem = document.getElementById('customerForm');
+        var handshake = Handshake;  
+        var elemForm = new Form(elem);
+
+        this.handShakes = {}; 
+    } 
+
+    handshake(topic, fn) {
+        this.handShakes[topic] = fn;
+        return this;
+    }
+  
+}
+
+module.exports = Gator;
+ import {pubSub} from "./utils";
+import FormField from './form-field';
+import {fieldMethods, rules, objType, fieldState} from "./config.js";
+
+
+class field {
+
+    constructor(uniqueId) {
+        this.uniqueId = uniqueId;
+        this.value = null;
+        this.ready = false;
+    }
+
+    isType(type) {
+        return rules.type.fn.call({params: [type]},this.value);
+    }
+
+}
+
+// This is an Event Loop
+class Handshake {
+
+    constructor() {
+        this._handshakes = {};
+        this.init();
+        window.hs = this._handshakes;
+    }
+ 
+    init() {
+        this.subscribe();
+    }
+
+    subscribe() {
+        this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this));
+        this.subExecute = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
+        this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this)); 
+        this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
+    }
+
+    register(obj) {
+        if(!this._handshakes.hasOwnProperty(obj.key)) {
+            this._handshakes[obj.key] = {
+                fields: {},
+                key: obj.key
+            }; 
+        }
+    }
+
+    addField(obj) {
+        this.register(obj);
+        this._handshakes[obj.key].fields[obj.fieldName] =  new field(obj.uniqueId);
+    }
+
+    setFieldReady(key, fieldName, value) {
+        let field = this._handshakes[key].fields[fieldName];
+        field.value = value;
+        field.ready = true;
+    }
+
+    fieldsReady(key) {
+        let fields = this._handshakes[key].fields;
+        for(let field in fields)  {
+            if(fields.hasOwnProperty(field)) {
+                if(!fields[field].ready) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    } 
+
+    execute(obj) {
+        // Update Field
+        this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
+        // Are all fields in handshake mode?
+        if(this.fieldsReady(obj.key) || !rules[obj.key].required) {
+                // Execute Function
+                rules[obj.key].fn(this._handshakes[obj.key].fields,
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackError'),
+                                this.callback.bind(this._handshakes[obj.key], 'field:callbackIgnore'));
+        }
+    }
+
+    callback(event) {
+          for(let field in this.fields) {
+            if(this.fields.hasOwnProperty(field)) {
+                pubSub.publish(event, {
+                    uniqueId: this.fields[field].uniqueId,
+                    key: this.key
+                }); 
+            }
+        }
+    }
+
+    reset() {
+
+    }
+
+    destroy() {
+        this.subRegister.remove();
+        this.subExecute.remove();
+        this.subExecute.remove();
+        this.subReset.remove();
+    }
+}
+
+module.exports = new Handshake;
+import {nl2arr, pubSub} from "./utils.js";
+import {attributes, fieldQuery} from "./config.js";
+
+class Messages {
+
+    constructor(msgsElem) {
+        this._msgsElem = msgsElem;
+        this._messages = {};
+        this.formName = null;
+        this.fieldName = null;
+        this.onInit();
+    }
+
+    onInit() {
+        let attrs = this._msgsElem.getAttribute(attributes.messages).split('.');
+        this.formName = attrs[0];
+        this.fieldName = attrs[1];
+       
+        this.register();
+        this.hideAll();
+        this.subscribe();
+    }
+
+    subscribe() {
+        let self = this;
+        this.subShow = pubSub.subscribe('messages:show', (obj) => {
+            if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
+                self.hideAll();
+                self.show(obj.key);
+            }
+        });
+
+        this.subClear = pubSub.subscribe('messages:clear', (obj) => {
+            if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
+                self.hideAll();
+            }
+        });
+
+        this.subDestroy = pubSub.subscribe('messages:destroy', (obj) => {
+            self.destroy();
+        });
+    }
+
+    // register internal messages.
+    register() {
+        let self = this;
+        nl2arr(this._msgsElem.querySelectorAll(fieldQuery.message))
+                .forEach((msgElem)  => {
+                    let key = msgElem.getAttribute(attributes.message);
+                    if (key) {
+                        self._messages[key] = msgElem; 
+                    }  
+                }); 
+    }
+
+    show(key) { 
+        this.validateKey(key);
+        this._messages[key].style.display = 'block';
+    }
+
+    hideAll() {
+        let messages = this._messages;
+        for(let key in messages ) {
+            this.validateKey(key);
+            messages[key].style.display = 'none';
+        }
+    }
+
+    validateKey(key) {
+         if (!this._messages.hasOwnProperty(key)) {
+             throw new Error(`Missing "gt-${key} in gt-messages="${this.formName}.${this.fieldName}"`);
+         }
+    }
+
+    destroy() {
+        this._elem = null;
+        this._messages.length = 0;
+        this.subShow.remove();
+        this.subClear.remove();
+        this.subDestroy.remove();
+    }
+}
+
+module.exports = Messages;
+
+ 
+export function nl2arr(nodeList) {
+    return Array.prototype.slice.call(nodeList);
+}
+
+// https://davidwalsh.name/pubsub-javascript
+export let pubSub = (() => {
+
+  var topics = {};
+  var hOP = topics.hasOwnProperty;
+
+  return {
+    subscribe: function(topic, listener) {
+      // Create the topic's object if not yet created
+      if(!hOP.call(topics, topic)) topics[topic] = [];
+
+      // Add the listener to queue
+      var index = topics[topic].push(listener) -1;
+
+      // Provide handle back for removal of topic
+      return {
+        remove: function() {
+          delete topics[topic][index];
+        }
+      };
+    },
+    publish: function(topic, info) {
+      // If the topic doesn't exist, or there's no listeners in queue, just leave
+      if(!hOP.call(topics, topic)) return;
+
+      // Cycle through topics queue, fire!
+      topics[topic].forEach(function(item) {
+      		item(info != undefined ? info : {});
+      });
+    }
+  };
+})();
+
+export function getUniqueId() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
+export function isString(str) {
+
+}
+
+export function isObject(obj) {
+
+}
+
+export function isArray(arr) {
+  
+}
+
+import {rules, validatorState} from './config';
+import {pubSub} from './utils'; 
+
+class Validator { 
+ 
+    constructor(key, params, fieldName, fieldUniqueId) { 
+        this.key = key;
+        this.fieldName = fieldName;
+        this.fieldUniqueId = fieldUniqueId;
+        this.state = validatorState.INIT;
+        this.params = params.length ? params.split(',') : [];
+        this.onInit();
+    } 
+
+    onInit() {
+        this.setPriority();
+        this.setHandshake();
+    }
+
+    setPriority() {
+        if (!rules.hasOwnProperty(this.key)) {
+            throw new Error(`Invalid directive, "gt-${this.key}"`);
+        }
+        this.priority = rules[this.key].priority;
+    } 
+
+    setHandshake() {
+        let self = this;
+        if(rules[this.key].handshake) {
+            pubSub.publish('handshake:addField', { 
+                key: self.key,
+                fieldName: self.fieldName,
+                uniqueId: self.fieldUniqueId
+            });
+        }
+    }
+
+	validate(value) {
+        let self = this,
+            rule = rules[this.key];
+        if(rule.handshake === true) {
+            this.state = validatorState.HANDSHAKE;
+        } else {
+            this.state = rule.fn.call(this, value) ? validatorState.SUCCESS : validatorState.ERROR;
+        }   
+    } 
+
+    destroy() {
+        this.params.length = 0;
+    }
+}
+
+module.exports = Validator;

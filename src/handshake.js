@@ -1,6 +1,21 @@
 import {pubSub} from "./utils";
 import FormField from './form-field';
-import {rules, objType, fieldState} from "./config.js";
+import {fieldMethods, rules, objType, fieldState} from "./config.js";
+
+
+class field {
+
+    constructor(uniqueId) {
+        this.uniqueId = uniqueId;
+        this.value = null;
+        this.ready = false;
+    }
+
+    isType(type) {
+        return rules.type.fn.call({params: [type]},this.value);
+    }
+
+}
 
 // This is an Event Loop
 class Handshake {
@@ -33,11 +48,7 @@ class Handshake {
 
     addField(obj) {
         this.register(obj);
-        this._handshakes[obj.key].fields[obj.fieldName] = {
-            uniqueId: obj.uniqueId,
-            value: null,
-            ready: false
-        };
+        this._handshakes[obj.key].fields[obj.fieldName] =  new field(obj.uniqueId);
     }
 
     setFieldReady(key, fieldName, value) {
@@ -62,7 +73,7 @@ class Handshake {
         // Update Field
         this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
         // Are all fields in handshake mode?
-        if(this.fieldsReady(obj.key)) {
+        if(this.fieldsReady(obj.key) || !rules[obj.key].required) {
                 // Execute Function
                 rules[obj.key].fn(this._handshakes[obj.key].fields,
                                 this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  

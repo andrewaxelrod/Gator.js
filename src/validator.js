@@ -36,7 +36,6 @@ class Validator {
     }
 
 	validate(value) {
-        console.log(value);
         let self = this,
             rule = rules[this.key];
         if(rule.handshake === true) {
