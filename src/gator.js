@@ -1,4 +1,4 @@
-import {fieldQuery, ruleTypes} from './config';
+import {fieldQuery, ruleTypes, rules} from './config';
 import {nl2arr} from "./utils.js";
 import Form from './form';
 import Message from './messages';
@@ -9,12 +9,11 @@ class Main {
     constructor() {  
         this._messages = []; 
         this._forms = [];
-        this.onInit();
     }
 
     onInit() {
-        this._registerForms();
         this._registerMessages();
+        this._registerForms();
     }
   
     _registerForms() {
@@ -45,18 +44,32 @@ class Gator extends Main {
 
     addRuleType(type, exp) {
         if(!exp instanceof RegExp)  {
-            throw new Error `${exp} must be a regular expression`;
+            throw new Error(`${exp} must be a regular expression`);
         }
         if(ruleTypes.hasOwnProperty(type))  {
-            throw new Error `${type} already exists as a rule type`;
+            throw new Error(`${type} already exists as a rule type`);
         }
          if(typeof type !== 'string')  {
-            throw new Error `${type} must be a string.`;
+            throw new Error(`${type} must be a string.`);
         }
         ruleTypes[type] = exp;
         return this;
+
     }
 
+    validator(key, fn, required, priority) {
+        rules[key] = { 
+            fn: fn,
+            priority: priority || 0,
+            handshake: true,
+            required: required || false
+        }
+        return this;
+    }
+
+    init() {
+        return this.onInit();
+    }
 }
 
 module.exports = Gator;

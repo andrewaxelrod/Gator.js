@@ -35,7 +35,7 @@
                                 gt-minlength="5"
                                 gt-maxlength="15"
                                 gt-type='customUsername'
-                                xgt-custom-username-exists
+                                gt-custom-username-exists
                                 required>
                         <div gt-messages="simpleRegistration.username" style="color:red" role="alert">
                             <div gt-message="required">Username is required.</div>
@@ -108,15 +108,19 @@
         (function() {
  
             function customUsernameExists(fields, success, error) {
-
+                window.setTimeout(function() {
+                    error();
+                }, 2000);
             }
 
             function customPassword(fields, success, error) {
 
             }
 
-           window.gator = new Gator({listener: 'change'})
-                .addRuleType('customUsername', /^[a-zA-Z0-9]+$/);
+           var gator = new Gator({listener: 'change'})
+                .addRuleType('customUsername', /^[a-zA-Z0-9]+$/)
+                .validator('customUsernameExists', customUsernameExists, true)
+                .init();
 
               //  .validator('customUsernameExists', customUsernameExists, true) 
               //  .validator('customPassword', customPassword, false);    

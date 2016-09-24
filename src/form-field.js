@@ -1,5 +1,5 @@
 import {objType, fieldState, validatorState, attributes, fieldQuery} from "./config.js";
-import {getUniqueId, nl2arr, pubSub} from "./utils.js";
+import {getUniqueId, nl2arr, pubSub, convertCamelCase} from "./utils.js";
 import Validator from "./validator"
 
 class FormField { 
@@ -58,11 +58,11 @@ class FormField {
     }
 
     disable() {
-      //this._fieldElem.disabled = true;
+        this._fieldElem.disabled = true;
     }
  
     enable() {
-       //this._fieldElem.disabled = false;
+        this._fieldElem.disabled = false;
     }
 
     validate() { 
@@ -107,7 +107,7 @@ class FormField {
             }
 
             if(attribute) {
-                self._validators.push(new Validator(attribute, attr.value, this.fieldName, this.uniqueId));
+                self._validators.push(new Validator(convertCamelCase(attribute), attr.value, this.fieldName, this.uniqueId));
             } 
         });
     }

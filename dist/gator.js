@@ -212,11 +212,11 @@
         };
 
         FormField.prototype.disable = function disable() {
-            //this._fieldElem.disabled = true;
+            this._fieldElem.disabled = true;
         };
 
         FormField.prototype.enable = function enable() {
-            //this._fieldElem.disabled = false;
+            this._fieldElem.disabled = false;
         };
 
         FormField.prototype.validate = function validate() {
@@ -276,7 +276,7 @@
                 }
 
                 if (attribute) {
-                    self._validators.push(new _validator2.default(attribute, attr.value, _this.fieldName, _this.uniqueId));
+                    self._validators.push(new _validator2.default((0, _utils.convertCamelCase)(attribute), attr.value, _this.fieldName, _this.uniqueId));
                 }
             });
         };
@@ -412,15 +412,6 @@
         };
     }
 
-    var _templateObject = _taggedTemplateLiteralLoose(['', ' must be a regular expression'], ['', ' must be a regular expression']),
-        _templateObject2 = _taggedTemplateLiteralLoose(['', ' already exists as a rule type'], ['', ' already exists as a rule type']),
-        _templateObject3 = _taggedTemplateLiteralLoose(['', ' must be a string.'], ['', ' must be a string.']);
-
-    function _taggedTemplateLiteralLoose(strings, raw) {
-        strings.raw = raw;
-        return strings;
-    }
-
     function _possibleConstructorReturn(self, call) {
         if (!self) {
             throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -457,12 +448,11 @@
 
             this._messages = [];
             this._forms = [];
-            this.onInit();
         }
 
         Main.prototype.onInit = function onInit() {
-            this._registerForms();
             this._registerMessages();
+            this._registerForms();
         };
 
         Main.prototype._registerForms = function _registerForms() {
@@ -500,16 +490,30 @@
 
         Gator.prototype.addRuleType = function addRuleType(type, exp) {
             if (!exp instanceof RegExp) {
-                throw new (Error(_templateObject, exp))();
+                throw new Error(exp + ' must be a regular expression');
             }
             if (_config.ruleTypes.hasOwnProperty(type)) {
-                throw new (Error(_templateObject2, type))();
+                throw new Error(type + ' already exists as a rule type');
             }
             if (typeof type !== 'string') {
-                throw new (Error(_templateObject3, type))();
+                throw new Error(type + ' must be a string.');
             }
             _config.ruleTypes[type] = exp;
             return this;
+        };
+
+        Gator.prototype.validator = function validator(key, fn, required, priority) {
+            _config.rules[key] = {
+                fn: fn,
+                priority: priority || 0,
+                handshake: true,
+                required: required || false
+            };
+            return this;
+        };
+
+        Gator.prototype.init = function init() {
+            return this.onInit();
         };
 
         return Gator;
@@ -769,11 +773,10 @@
   });
   exports.nl2arr = nl2arr;
   exports.getUniqueId = getUniqueId;
-  exports.isObject = isObject;
-  exports.isArray = isArray;
+  exports.convertCamelCase = convertCamelCase;
   function nl2arr(nodeList) {
     return Array.prototype.slice.call(nodeList);
-  }
+  };
 
   // https://davidwalsh.name/pubsub-javascript
   var pubSub = exports.pubSub = function () {
@@ -813,11 +816,13 @@
       return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
     }
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-  }
+  };
 
-  function isObject(obj) {}
-
-  function isArray(arr) {}
+  function convertCamelCase(str) {
+    return str.replace(/-([a-z])/g, function (s) {
+      return s[1].toUpperCase();
+    });
+  };
 });
 
 },{}],8:[function(require,module,exports){

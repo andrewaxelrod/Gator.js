@@ -1,7 +1,7 @@
 
 export function nl2arr(nodeList) {
     return Array.prototype.slice.call(nodeList);
-}
+};
 
 // https://davidwalsh.name/pubsub-javascript
 export let pubSub = (() => {
@@ -44,12 +44,13 @@ export function getUniqueId() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
     s4() + '-' + s4() + s4() + s4();
-}
+};
 
-export function isObject(obj) {
+export function convertCamelCase(str) {
+  return str.replace(/-([a-z])/g, 
+    (s) => { 
+      return s[1].toUpperCase(); 
+    });
+};
 
-}
-
-export function isArray(arr) {
-  
-}
+ 

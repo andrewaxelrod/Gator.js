@@ -23,7 +23,7 @@ class Validator {
         }
         this.priority = rules[this.key].priority;
     } 
-
+ 
     setHandshake() {
         let self = this;
         if(rules[this.key].handshake) {
