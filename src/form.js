@@ -5,43 +5,32 @@ import {fieldQuery} from "./config.js";
 
 class Form { 
  
-    constructor(elem) { 
-        this.elem = elem;
-        this.fields = [];
-        this.messages = [];
-        this.name = this.elem.getAttribute("name");
+    constructor(formElem) { 
+        this._elem = formElem;
+        this._fields = [];
+        this.name = null;
         this.onInit();
     }
  
     onInit() {
+        this.name = this._elem.getAttribute("name");
         this.registerFormFields();
-        this.registerMessages(); 
     }
 
     registerFormFields() {
-        let self = this;
-        nl2arr(this.elem.querySelectorAll(
+        nl2arr(this._elem.querySelectorAll(
             fieldQuery.input+ 
             fieldQuery.select+
             fieldQuery.textarea))
-                .forEach((elem)  => {
-                    this.fields.push(new FormField(elem, this.name));
+                .forEach((fieldElem)  => {
+                    this._fields.push(new FormField(fieldElem, this.name));
                 });  
     }
 
-    registerMessages() {
-        let self = this;
-        nl2arr(this.elem.querySelectorAll(fieldQuery.messages))
-            .forEach((elem)  => {
-                this.messages.push(new Messages(elem));
-            });  
-    }
-
     destroy() {
-        this.elem = null;
-        this.fields.length = 0;
+        this._elem = null;
+        this._fields.length = 0;
     }
-
 }
 
 module.exports = Form;

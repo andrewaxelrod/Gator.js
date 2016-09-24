@@ -1,19 +1,11 @@
  
 // Simple version of an Enums
-export const fieldState = {
+export const validatorState = {
     INIT: 0,
     WAIT: 1,
     SUCCESS: 2,
     ERROR: 4,
     HANDSHAKE: 5
-};
-
-// Simple version of an Enums
-export const validatorState = {
-    INIT: 0,
-    SUCCESS: 1,
-    ERROR: 2,
-    HANDSHAKE: 3
 };
 
 export const objType = {
@@ -31,6 +23,7 @@ export const  fieldQuery = {
       input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
       textarea: ',textarea[required]:not(:disabled):not([readonly])',
+      form: `[${appPrefix}-form]`,
       messages: `[${appPrefix}-messages]`,
       message: `[${appPrefix}-message]`
 };
@@ -52,7 +45,7 @@ export const ruleTypes = {
 }
 
 export const rules = { 
-    required: {
+     required: {
         fn: function(value) {
           return (/\S/.test(value));
         },
@@ -81,15 +74,7 @@ export const rules = {
         priority: 512,
         handshake: false
       },
-      handshake: {
-        fn: function(fields, success, error) {
-          console.log('Inside handshake');
-          error();
-        },
-        priority: 0,
-        handshake: true
-      },
-      all: {
+      group: {
         fn: function(fields, success, error) {
           for(let field in fields) {
             if(!fields[field].value) {
@@ -100,20 +85,8 @@ export const rules = {
           success();
         },
         priority: 0,
-        handshake: true 
-      },
-      one: {
-        fn: function(fields, success, error) {
-          for(let field in fields) {
-            if(fields[field].value) {
-              success();
-              return;
-            }
-          }
-          error();
-        },
-        priority: 0,
-        handshake: true 
+        handshake: true,
+        required: false
       },
       same: {
         fn: function(fields, success, error) {
@@ -127,44 +100,8 @@ export const rules = {
           success(); 
         },
         priority: 0,
-        handshake: true
-      },
-      groupAll: {
-        fn: function(fields) {
-          for(let field of fields) {
-            if(!field.value) {
-              return false;
-            }
-          }
-          return true;
-        },
-        priority: 0,
-        handshake: true
-      },
-      custom: {
-        fn: function(fields, success, error, ignore) {
-          if(fields.email.isType('email')) {
-            success()
-          } else  {
-            error();
-          }  
-          
-           
-        },
-        priority: 0,
         handshake: true,
-        required: false 
-      },
-     custom2: {
-        fn: function(fields, success, error, ignore, ajax) {
-
-          
-         
-           
-        },
-        priority: 0,
-        handshake: true,
-        required: false 
+        required: false
       }
 };
  

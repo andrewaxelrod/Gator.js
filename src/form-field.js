@@ -7,7 +7,7 @@ class FormField {
     constructor(fieldElem, formName) { 
         this.uniqueId = getUniqueId();
         this.objType = objType.FIELD;
-        this.fieldState = fieldState.INIT;
+        this.fieldState = validatorState.INIT;
         this._fieldElem = fieldElem;
         this.fieldName = fieldElem.getAttribute("name");
         this.fieldValue =  this._fieldElem.value;
@@ -32,57 +32,52 @@ class FormField {
     }
 
     callbackSuccess(obj) {
- 
         if(this.uniqueId === obj.uniqueId) {
             this.clearError();
             this.enable();
         }
     }
 
-    callbackError(obj) {
-         
+    callbackError(obj) { 
         if(this.uniqueId === obj.uniqueId) {     
             this.enable();
-            this.showError(obj.key);
-            this.fieldState = validatorState.ERROR;
+            if(this.fieldState !== validatorState.ERROR) {
+                this.showError(obj.key); 
+            }
         }
     }
 
      callbackIgnore(obj) {
-         
         if(this.uniqueId === obj.uniqueId) {     
             this.enable();
         }
     }
 
-    // Only pass in info you need and don't pass by reference.
-    // Bug fix - Add change to the event list for copy and paste fields.
     listener() {
        this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
     }
 
     disable() {
-      this._fieldElem.disabled = true;
+      //this._fieldElem.disabled = true;
     }
  
     enable() {
-       this._fieldElem.disabled = false;
+       //this._fieldElem.disabled = false;
     }
 
     validate() { 
-       
         this.fieldValue = this._fieldElem.value;
-        this.fieldState = fieldState.WAIT;
+        this.fieldState = validatorState.WAIT;
          for(let validator of this._validators) {
              validator.validate(this.fieldValue);
              if(validator.state === validatorState.ERROR) {
                 this.showError(validator.key);
-                this.fieldState = fieldState.ERROR;
+                this.fieldState = validatorState.ERROR;
                 return;
              } else if (validator.state === validatorState.HANDSHAKE) {
                 this.disable();
                 this.clearError();
-                this.fieldState = fieldState.HANDSHAKE;
+                this.fieldState = validatorState.HANDSHAKE;
                 pubSub.publish('handshake:execute', { 
                     key: validator.key,
                     fieldName: this.fieldName,
@@ -92,8 +87,8 @@ class FormField {
                 return;
              }
          }   
-        this.fieldValidator = validator;
-        this.fieldState = fieldState.SUCCESS;
+        // this.fieldValidator = validator;
+        this.fieldState = validatorState.SUCCESS;
         this.clearError();
     }
 
@@ -110,11 +105,10 @@ class FormField {
             } else {
                 attribute = null;
             }
-          
+
             if(attribute) {
                 self._validators.push(new Validator(attribute, attr.value, this.fieldName, this.uniqueId));
             } 
-           
         });
     }
 
@@ -124,7 +118,6 @@ class FormField {
         }
     }
  
-
     showError(key) {
         pubSub.publish('messages:show', {
             fieldName: this.fieldName,

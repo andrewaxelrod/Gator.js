@@ -46,10 +46,6 @@ export function getUniqueId() {
     s4() + '-' + s4() + s4() + s4();
 }
 
-export function isString(str) {
-
-}
-
 export function isObject(obj) {
 
 }

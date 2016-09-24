@@ -1,9 +1,9 @@
  
-export const priorityDefault = 30;
+ const priorityDefault = 30;
 
-export const appPrefix = 'gt';
+const appPrefix = 'gt';
 
-export const  fieldQuery = {
+const  fieldQuery = {
       prefix: `^${appPrefix}`,
       input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
@@ -12,13 +12,13 @@ export const  fieldQuery = {
       message: `[${appPrefix}-message]`
 };
 
-export const attributes = {
+const attributes = {
     prefix: `${appPrefix}-`,
     messages: `${appPrefix}-messages`,
     message: `${appPrefix}-message`
 }
 
-export const ruleTypes = {
+const ruleTypes = {
     email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
     number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
     integer: /^-?\d+$/,
@@ -27,8 +27,7 @@ export const ruleTypes = {
     date: /^(\d{4})-(\d{2})-(\d{2})$/,
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
 }
-
-export const rules = { 
+const rules = { 
     required: {
         fn: function(value) {
           return (/\S/.test(value));
@@ -167,9 +166,7 @@ export const objType = {
     FORM: 1,
     MESSAGE: 2 
 };
-import {objType, fieldState, validatorState, attributes, fieldQuery} from "./config.js";
-import {getUniqueId, nl2arr, pubSub} from "./utils.js";
-import Validator from "./validator"
+ 
 
 class FormField { 
  
@@ -319,10 +316,7 @@ class FormField {
 
 }
 
-module.exports = FormField;
-import Form from './form';
-import Handshake from './handshake';
-
+ 
 class Gator { 
  
     constructor() { 
@@ -340,10 +334,7 @@ class Gator {
   
 }
 
-module.exports = Gator;
- import {pubSub} from "./utils";
-import FormField from './form-field';
-import {fieldMethods, rules, objType, fieldState} from "./config.js";
+ 
 
 
 class field {
@@ -448,10 +439,7 @@ class Handshake {
     }
 }
 
-module.exports = new Handshake;
-import {nl2arr, pubSub} from "./utils.js";
-import {attributes, fieldQuery} from "./config.js";
-
+ 
 class Messages {
 
     constructor(msgsElem) {
@@ -532,15 +520,7 @@ class Messages {
     }
 }
 
-module.exports = Messages;
-
- 
-export function nl2arr(nodeList) {
-    return Array.prototype.slice.call(nodeList);
-}
-
-// https://davidwalsh.name/pubsub-javascript
-export let pubSub = (() => {
+let pubSub = (() => {
 
   var topics = {};
   var hOP = topics.hasOwnProperty;
@@ -582,21 +562,9 @@ export function getUniqueId() {
     s4() + '-' + s4() + s4() + s4();
 }
 
-export function isString(str) {
+ 
 
-}
-
-export function isObject(obj) {
-
-}
-
-export function isArray(arr) {
-  
-}
-
-import {rules, validatorState} from './config';
-import {pubSub} from './utils'; 
-
+ 
 class Validator { 
  
     constructor(key, params, fieldName, fieldUniqueId) { 
@@ -646,4 +614,4 @@ class Validator {
     }
 }
 
-module.exports = Validator;
+ 

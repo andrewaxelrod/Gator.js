@@ -1,10 +1,10 @@
 import {nl2arr, pubSub} from "./utils.js";
 import {attributes, fieldQuery} from "./config.js";
 
-class Messages {
+class Message {
 
     constructor(msgsElem) {
-        this._msgsElem = msgsElem;
+        this._elem = msgsElem;
         this._messages = {};
         this.formName = null;
         this.fieldName = null;
@@ -12,75 +12,67 @@ class Messages {
     }
 
     onInit() {
-        let attrs = this._msgsElem.getAttribute(attributes.messages).split('.');
+        let attrs = this._elem.getAttribute(attributes.messages).split('.');
         this.formName = attrs[0];
         this.fieldName = attrs[1];
-       
-        this.register();
-        this.hideAll();
+        this.registerBlockMessages();
         this.subscribe();
+        this.clearMessages();
     }
 
     subscribe() {
-        let self = this;
-        this.subShow = pubSub.subscribe('messages:show', (obj) => {
-            if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
-                self.hideAll();
-                self.show(obj.key);
-            }
-        });
-
-        this.subClear = pubSub.subscribe('messages:clear', (obj) => {
-            if (obj.fieldName === self.fieldName && obj.formName === self.formName) {
-                self.hideAll();
-            }
-        });
-
-        this.subDestroy = pubSub.subscribe('messages:destroy', (obj) => {
-            self.destroy();
-        });
+        this.subShow = pubSub.subscribe('messages:show', this.showMessage.bind(this));
+        this.subClear = pubSub.subscribe('messages:clear', this.clearMessages.bind(this));
+        this.subDestroy = pubSub.subscribe('messages:destroy', this.destroy.bind(this));
     }
 
-    // register internal messages.
-    register() {
-        let self = this;
-        nl2arr(this._msgsElem.querySelectorAll(fieldQuery.message))
+    clearMessages(obj) {
+        let messages = this._messages;
+        if (obj === undefined || (obj.fieldName === this.fieldName && obj.formName === this.formName)) {
+            for(let key in messages ) {
+                if (this._messages.hasOwnProperty(key)) {
+                    messages[key].style.display = 'none';
+                }
+            }
+        }
+    }
+
+    showMessage(obj) {
+        if (obj.fieldName === this.fieldName && obj.formName === this.formName) {
+                this.clearMessages(obj);
+                if (this._messages.hasOwnProperty(obj.key)) {
+                    this._messages[obj.key].style.display = 'block';
+                }
+        } 
+    }
+
+    isKeyValid(key) {
+         if (!this._messages.hasOwnProperty(key)) {
+             throw new Error(`Missing "gt-${key} in gt-messages="${this.formName}.${this.fieldName}"`);
+         }
+    }
+
+    registerBlockMessages() {
+        let self = this,
+            key = null;
+        nl2arr(this._elem.querySelectorAll(fieldQuery.message))
                 .forEach((msgElem)  => {
-                    let key = msgElem.getAttribute(attributes.message);
+                    key = msgElem.getAttribute(attributes.message);
                     if (key) {
                         self._messages[key] = msgElem; 
                     }  
                 }); 
     }
 
-    show(key) { 
-        this.validateKey(key);
-        this._messages[key].style.display = 'block';
-    }
-
-    hideAll() {
-        let messages = this._messages;
-        for(let key in messages ) {
-            this.validateKey(key);
-            messages[key].style.display = 'none';
-        }
-    }
-
-    validateKey(key) {
-         if (!this._messages.hasOwnProperty(key)) {
-             throw new Error(`Missing "gt-${key} in gt-messages="${this.formName}.${this.fieldName}"`);
-         }
-    }
-
     destroy() {
         this._elem = null;
-        this._messages.length = 0;
+        this._messages = null;
         this.subShow.remove();
         this.subClear.remove();
         this.subDestroy.remove();
     }
 }
 
-module.exports = Messages;
+module.exports = Message;
 
  
