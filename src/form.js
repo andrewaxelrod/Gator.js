@@ -1,6 +1,6 @@
 import FormField from './form-field';
 import Messages from './messages';
-import {nl2arr} from "./utils.js";
+import {nl2arr, pubSub} from "./utils.js";
 import {fieldQuery} from "./config.js";
 
 class Form { 
@@ -15,6 +15,11 @@ class Form {
     onInit() {
         this.name = this._elem.getAttribute("name");
         this.registerFormFields();
+        this.subscribe();
+    }
+
+     subscribe() {
+        this.subCBDestroy = pubSub.subscribe('form:destroy', this.destroy.bind(this));        
     }
 
     registerFormFields() {
@@ -28,8 +33,10 @@ class Form {
     }
 
     destroy() {
+        console.log('form is destroyed');
         this._elem = null;
         this._fields.length = 0;
+        this.subCBDestroy.remove();
     }
 }
 

@@ -1,4 +1,4 @@
-import {objType, fieldState, validatorState, attributes, fieldQuery} from "./config.js";
+import {objType, fieldState, validatorState, attributes, Events, fieldQuery} from "./config.js";
 import {getUniqueId, nl2arr, pubSub, convertCamelCase} from "./utils.js";
 import Validator from "./validator"
 
@@ -6,90 +6,107 @@ class FormField {
  
     constructor(fieldElem, formName) { 
         this.uniqueId = getUniqueId();
-        this.objType = objType.FIELD;
-        this.fieldState = validatorState.INIT;
+        this.formName = formName;
         this._fieldElem = fieldElem;
         this.fieldName = fieldElem.getAttribute("name");
-        this.fieldValue =  this._fieldElem.value;
-        this.fieldValidator = null;
-        this.formName = formName;
         this._validators = [];
+        this.validatorIndex = 0;
         this.onInit();
     } 
 
-    onInit() {
+    onInit() {  
         this.registerValidators();
         this.prioritizeValidators();
         this.subscribe();
-        this.listener();
+        this.listeners();
        
+    }
+
+    handleEvent(event) {
+        switch(event.type) {
+            case Events.CHANGE:
+                this.validatorLoop(Events.CHANGE);
+                break;
+            case Events.KEYUP:
+                this.validatorIndex = 0;
+                this.validatorLoop(Events.KEYUP);
+                break;
+        }
+    }
+
+    listeners() {
+        this._fieldElem.addEventListener(Events.KEYUP, this, false);
+        this._fieldElem.addEventListener(Events.CHANGE, this, false);
     }
 
     subscribe() {
         this.subCBSuccess = pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));   
         this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
-        this.subCBIgnore = pubSub.subscribe('field:callbackIgnore', this.callbackIgnore.bind(this));       
+        this.subCBDestroy = pubSub.subscribe('field:destroy', this.destroy.bind(this));        
     }
 
     callbackSuccess(obj) {
         if(this.uniqueId === obj.uniqueId) {
-            this.clearError();
             this.enable();
+            this.clearError();   
         }
     }
 
     callbackError(obj) { 
         if(this.uniqueId === obj.uniqueId) {     
             this.enable();
-            if(this.fieldState !== validatorState.ERROR) {
-                this.showError(obj.key); 
+            this.showError(obj.key); 
+        }
+    }
+
+    handshake(validatorKey, fieldValue) {
+        pubSub.publish('handshake:execute', { 
+            uniqueId: this.uniqueId,
+            fieldName: this.fieldName,
+            value: fieldValue,
+            key: validatorKey
+        });
+    }
+
+    validatorLoop(event) { 
+
+        let fieldValue = this._fieldElem.value,
+            validator = null,
+            validators = this._validators; 
+
+        for(let i = this.validatorIndex, len = this._validators.length; i < len; i++) {
+             validator = validators[i];
+             if(event === validator.event || validator.event === Events.KEYUP) {    
+                this.validatorIndex = i;
+                this.clearError();
+                validator.validate(fieldValue);
+                if(validator.isHandshake()) {
+                    this.disable();
+                    this.handshake(validator.key); 
+                    return;
+                } else if(validator.isError()) {
+                    this.showError(validator.key);
+                    return;
+                }
             }
         }
+        // SUCCESS STATE
+       this.clearError();
     }
 
-     callbackIgnore(obj) {
-        if(this.uniqueId === obj.uniqueId) {     
-            this.enable();
-        }
+    showError(key) {
+        pubSub.publish('messages:show', {
+            fieldName: this.fieldName,
+            formName: this.formName,
+            key: key
+        });
     }
 
-    listener() {
-       this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
-    }
-
-    disable() {
-        this._fieldElem.disabled = true;
-    }
- 
-    enable() {
-        this._fieldElem.disabled = false;
-    }
-
-    validate() { 
-        this.fieldValue = this._fieldElem.value;
-        this.fieldState = validatorState.WAIT;
-         for(let validator of this._validators) {
-             validator.validate(this.fieldValue);
-             if(validator.state === validatorState.ERROR) {
-                this.showError(validator.key);
-                this.fieldState = validatorState.ERROR;
-                return;
-             } else if (validator.state === validatorState.HANDSHAKE) {
-                this.disable();
-                this.clearError();
-                this.fieldState = validatorState.HANDSHAKE;
-                pubSub.publish('handshake:execute', { 
-                    key: validator.key,
-                    fieldName: this.fieldName,
-                    fieldValue: this.fieldValue,
-                    uniqueId: self.uniqueId
-                });
-                return;
-             }
-         }   
-        // this.fieldValidator = validator;
-        this.fieldState = validatorState.SUCCESS;
-        this.clearError();
+    clearError() {
+        pubSub.publish('messages:clear', {
+            fieldName: this.fieldName,
+            formName: this.formName
+        });
     }
 
     registerValidators() {
@@ -118,27 +135,25 @@ class FormField {
         }
     }
  
-    showError(key) {
-        pubSub.publish('messages:show', {
-            fieldName: this.fieldName,
-            formName: this.formName,
-            key: key
-        });
+
+
+    enable() {
+        this._fieldElem.disabled = false;
     }
 
-    clearError() {
-        pubSub.publish('messages:clear', {
-            fieldName: this.fieldName,
-            formName: this.formName
-        });
+    disable() {
+        this._fieldElem.disabled = true;
     }
-
+ 
     destroy() {
-        this._fieldElem.removeEventListener('keyup', this.validate.bind(this), false);
-        this.subCBSuccess.remove();
-        this.subCBError.remove();
+        console.log("fields are destroyed!");
+        this._fieldElem.removeEventListener('keyup', this, false);
+        this._fieldElem.removeEventListener('change', this, false);
         this._fieldElem = null;
         this._validators.length = 0;
+        this.subCBSuccess.remove();
+        this.subCBError.remove();
+        this.subCBDestroy.remove();
     }
 
 }

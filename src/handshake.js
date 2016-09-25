@@ -28,8 +28,9 @@ class Handshake {
 
     subscribe() {
         this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this));
-        this.subExecute = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
+        this.subAddField = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
         this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this)); 
+        this.subDestroy = pubSub.subscribe('handshake:destroy', this.destroy.bind(this)); 
         // this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
     }
 
@@ -89,12 +90,13 @@ class Handshake {
     }
 
     destroy() {
+        console.log('handshake is destroyed.');
         this._handshakes = null;
         this.subRegister.remove();
+        this.subAddField.remove();
         this.subExecute.remove();
-        this.subExecute.remove();
-        this.subReset.remove();
+        this.subDestroy.remove();
     }
 }
 
-module.exports = new Handshake;
+module.exports = Handshake;

@@ -1,4 +1,4 @@
-import {rules, validatorState} from './config';
+import {rules, validatorState, Events} from './config';
 import {pubSub} from './utils'; 
 
 class Validator { 
@@ -7,14 +7,22 @@ class Validator {
         this.key = key;
         this.fieldName = fieldName;
         this.fieldUniqueId = fieldUniqueId;
-        this.state = validatorState.INIT;
-        this.params = params.length ? params.split(',') : [];
-        this.onInit();
+        this.state = validatorState.INIT;    
+
+        let p = params.match(/^(.*?)(?:\:(\w*)){0,1}$/);
+        this.params = p[1] ? p[1].split(',') : null;
+        this.event = p[2] || Events.KEYUP;
+        this.onInit(); 
     } 
 
     onInit() {
         this.setPriority();
         this.setHandshake();
+        this.subscribe();
+    }
+
+    subscribe() {
+        this.subCBDestroy = pubSub.subscribe('validator:destroy', this.destroy.bind(this));        
     }
 
     setPriority() {
@@ -45,8 +53,18 @@ class Validator {
         }   
     } 
 
+    isHandshake() {
+        return this.state === validatorState.HANDSHAKE;
+    }
+
+    isError() {
+        return this.state === validatorState.ERROR;
+    }
+
     destroy() {
+        console.log('valdidator is destroyed!')
         this.params.length = 0;
+        this.subCBDestroy.remove();
     }
 }
 

@@ -1,5 +1,4 @@
- 
-// Simple version of an Enums
+
 export const validatorState = {
     INIT: 0,
     WAIT: 1,
@@ -8,30 +7,33 @@ export const validatorState = {
     HANDSHAKE: 5
 };
 
+export const Events = {
+    KEYUP: 'keyup',
+    CHANGE: 'change' 
+};
+
 export const objType = {
     FIELD: 0,
     FORM: 1,
     MESSAGE: 2 
 };
 
-export const priorityDefault = 30;
-
-export const appPrefix = 'gt';
+export const PREFIX = 'gt';
 
 export const  fieldQuery = {
-      prefix: `^${appPrefix}`,
+      prefix: `^${PREFIX}`,
       input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
       textarea: ',textarea[required]:not(:disabled):not([readonly])',
-      form: `[${appPrefix}-form]`,
-      messages: `[${appPrefix}-messages]`,
-      message: `[${appPrefix}-message]`
+      form: `form[name="{{name}}"]`,
+      messages: `[${PREFIX}-messages]`,
+      message: `[${PREFIX}-message]`
 };
 
 export const attributes = {
-    prefix: `${appPrefix}-`,
-    messages: `${appPrefix}-messages`,
-    message: `${appPrefix}-message`
+    prefix: `${PREFIX}-`,
+    messages: `${PREFIX}-messages`,
+    message: `${PREFIX}-message`
 }
 
 export const ruleTypes = {
@@ -43,6 +45,8 @@ export const ruleTypes = {
     date: /^(\d{4})-(\d{2})-(\d{2})$/,
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
 }
+
+export const PRIORITY_DEFAULT = 30;
 
 export const rules = { 
      required: {

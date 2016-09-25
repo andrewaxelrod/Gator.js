@@ -1,23 +1,26 @@
 import {fieldQuery, ruleTypes, rules} from './config';
-import {nl2arr} from "./utils.js";
+import {nl2arr, pubSub} from "./utils.js";
 import Form from './form';
 import Message from './messages';
 import Handshake from './handshake';
 
 class Main { 
  
-    constructor() {  
+    constructor(formName) {  
         this._messages = []; 
         this._forms = [];
+        this._handshake = null;
     }
 
-    onInit() {
+    _init(formName) {
+        this._handshake = new Handshake();
         this._registerMessages();
-        this._registerForms();
+        this._registerForm(formName);
     }
-  
-    _registerForms() {
-        nl2arr(document.querySelectorAll(fieldQuery.form))
+
+    _registerForm(formName) {
+        let query = formName ? fieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
+        nl2arr(document.querySelectorAll(query))
             .forEach((formElem)  => {
                 this._forms.push(new Form(formElem));
             });  
@@ -30,9 +33,16 @@ class Main {
             });  
     }
 
-    destroy() {
+    _destroy() {
+        console.log('main is destroyed');
+        pubSub.publish('field:destroy', {});
+        pubSub.publish('messages:destroy', {});
+        pubSub.publish('handshake:destroy', {});
+        pubSub.publish('form:destroy', {});
+        pubSub.publish('validator:destroy', {});
         this._messages.length = 0;
         this._forms.length = 0;
+        this._handshake = null;
     }
 }
 
@@ -58,6 +68,7 @@ class Gator extends Main {
     }
 
     validator(key, fn, required, priority) {
+        // TO-DO: Check for correct parameters
         rules[key] = { 
             fn: fn,
             priority: priority || 0,
@@ -67,8 +78,14 @@ class Gator extends Main {
         return this;
     }
 
-    init() {
-        return this.onInit();
+    destroy() {
+        this._destroy();
+        return this;
+    }
+
+    init(formName) {
+       this._init(formName);
+       return this;
     }
 }
 

@@ -65,6 +65,7 @@ class Message {
     }
 
     destroy() {
+        console.log('messages are destroyed');
         this._elem = null;
         this._messages = null;
         this.subShow.remove();
