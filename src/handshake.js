@@ -31,7 +31,6 @@ class Handshake {
         this.subAddField = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
         this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this)); 
         this.subDestroy = pubSub.subscribe('handshake:destroy', this.destroy.bind(this)); 
-        // this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
     }
 
     register(obj) {
@@ -66,11 +65,23 @@ class Handshake {
         return true;
     } 
 
+    disableFields(key) {
+        let fields = this._handshakes[key].fields;
+        for(let field in fields)  {
+            if(fields.hasOwnProperty(field)) {
+               pubSub.publish('field:disable', {
+                    uniqueId: fields[field].uniqueId
+                });
+            }
+        }
+    }
+
     execute(obj) {
         let required = rules[obj.key].hasOwnProperty('required')  ? rules[obj.key].required : false;
         this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
         if(this.checkFieldsReady(obj.key) || !required) {
-                // Execute Function
+            this.disableFields(obj.key);
+            // Execute Function
             rules[obj.key].fn(this._handshakes[obj.key].fields,
                 this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  
                 this.callback.bind(this._handshakes[obj.key], 'field:callbackError'),

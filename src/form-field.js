@@ -22,6 +22,14 @@ class FormField {
        
     }
 
+    // Best Practice adding event listeners within an object in order to access it's methods and avoid using bind.
+    // This should work for IE9+ Browsers.
+    // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
+    listeners() {
+        this._fieldElem.addEventListener(Events.KEYUP, this, false);
+        this._fieldElem.addEventListener(Events.CHANGE, this, false);
+    }
+
     handleEvent(event) {
         switch(event.type) {
             case Events.CHANGE:
@@ -34,12 +42,8 @@ class FormField {
         }
     }
 
-    listeners() {
-        this._fieldElem.addEventListener(Events.KEYUP, this, false);
-        this._fieldElem.addEventListener(Events.CHANGE, this, false);
-    }
-
     subscribe() {
+        this.subCBDisable = pubSub.subscribe('field:disable', this.callbackDisable.bind(this));   
         this.subCBSuccess = pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));   
         this.subCBError = pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
         this.subCBDestroy = pubSub.subscribe('field:destroy', this.destroy.bind(this));        
@@ -58,6 +62,12 @@ class FormField {
            if(this._validators[this.validatorIndex].state !== validatorState.ERROR) {
                 this.showError(obj.key); 
             }  
+        }
+    }
+
+    callbackDisable(obj) {
+        if(this.uniqueId === obj.uniqueId) {     
+            this.disable();
         }
     }
 
@@ -134,8 +144,6 @@ class FormField {
             this._validators.sort((a, b) =>  b.priority - a.priority);
         }
     }
- 
-
 
     enable() {
         this._fieldElem.disabled = false;
@@ -154,6 +162,7 @@ class FormField {
         this.subCBSuccess.remove();
         this.subCBError.remove();
         this.subCBDestroy.remove();
+        this.subCBDisable.remove();
     }
 
 }
