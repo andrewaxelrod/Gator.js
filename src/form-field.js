@@ -52,10 +52,12 @@ class FormField {
         }
     }
 
-    callbackError(obj) { 
+    callbackError(obj) {  
         if(this.uniqueId === obj.uniqueId) {     
-            this.enable();
-            this.showError(obj.key); 
+           this.enable();
+           if(this._validators[this.validatorIndex].state !== validatorState.ERROR) {
+                this.showError(obj.key); 
+            }  
         }
     }
 
@@ -63,13 +65,12 @@ class FormField {
         pubSub.publish('handshake:execute', { 
             uniqueId: this.uniqueId,
             fieldName: this.fieldName,
-            value: fieldValue,
+            fieldValue: fieldValue,
             key: validatorKey
         });
     }
 
     validatorLoop(event) { 
-
         let fieldValue = this._fieldElem.value,
             validator = null,
             validators = this._validators; 
@@ -81,8 +82,7 @@ class FormField {
                 this.clearError();
                 validator.validate(fieldValue);
                 if(validator.isHandshake()) {
-                    this.disable();
-                    this.handshake(validator.key); 
+                    this.handshake(validator.key, fieldValue); 
                     return;
                 } else if(validator.isError()) {
                     this.showError(validator.key);

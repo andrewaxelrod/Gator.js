@@ -105,7 +105,7 @@ export const rules = {
         },
         priority: 0,
         handshake: true,
-        required: false
+        required: true // All fields must pass all initial validators up until the handshake or won't be called.
       }
 };
  
