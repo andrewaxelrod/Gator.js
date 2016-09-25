@@ -17,8 +17,6 @@
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-
-  // Simple version of an Enums
   var validatorState = exports.validatorState = {
     INIT: 0,
     WAIT: 1,
@@ -27,30 +25,33 @@
     HANDSHAKE: 5
   };
 
+  var Events = exports.Events = {
+    KEYUP: 'keyup',
+    CHANGE: 'change'
+  };
+
   var objType = exports.objType = {
     FIELD: 0,
     FORM: 1,
     MESSAGE: 2
   };
 
-  var priorityDefault = exports.priorityDefault = 30;
-
-  var appPrefix = exports.appPrefix = 'gt';
+  var PREFIX = exports.PREFIX = 'gt';
 
   var fieldQuery = exports.fieldQuery = {
-    prefix: '^' + appPrefix,
+    prefix: '^' + PREFIX,
     input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
     select: ',select[required]:not(:disabled):not([readonly])',
     textarea: ',textarea[required]:not(:disabled):not([readonly])',
-    form: '[' + appPrefix + '-form]',
-    messages: '[' + appPrefix + '-messages]',
-    message: '[' + appPrefix + '-message]'
+    form: 'form[name="{{name}}"]',
+    messages: '[' + PREFIX + '-messages]',
+    message: '[' + PREFIX + '-message]'
   };
 
   var attributes = exports.attributes = {
-    prefix: appPrefix + '-',
-    messages: appPrefix + '-messages',
-    message: appPrefix + '-message'
+    prefix: PREFIX + '-',
+    messages: PREFIX + '-messages',
+    message: PREFIX + '-message'
   };
 
   var ruleTypes = exports.ruleTypes = {
@@ -62,6 +63,8 @@
     date: /^(\d{4})-(\d{2})-(\d{2})$/,
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
   };
+
+  var PRIORITY_DEFAULT = exports.PRIORITY_DEFAULT = 30;
 
   var rules = exports.rules = {
     required: {
@@ -121,7 +124,7 @@
       },
       priority: 0,
       handshake: true,
-      required: false
+      required: true // All fields must pass all initial validators up until the handshake or won't be called.
     }
   };
 });
@@ -161,14 +164,11 @@
             _classCallCheck(this, FormField);
 
             this.uniqueId = (0, _utils.getUniqueId)();
-            this.objType = _config.objType.FIELD;
-            this.fieldState = _config.validatorState.INIT;
+            this.formName = formName;
             this._fieldElem = fieldElem;
             this.fieldName = fieldElem.getAttribute("name");
-            this.fieldValue = this._fieldElem.value;
-            this.fieldValidator = null;
-            this.formName = formName;
             this._validators = [];
+            this.validatorIndex = 0;
             this.onInit();
         }
 
@@ -176,87 +176,94 @@
             this.registerValidators();
             this.prioritizeValidators();
             this.subscribe();
-            this.listener();
+            this.listeners();
+        };
+
+        FormField.prototype.handleEvent = function handleEvent(event) {
+            switch (event.type) {
+                case _config.Events.CHANGE:
+                    this.validatorLoop(_config.Events.CHANGE);
+                    break;
+                case _config.Events.KEYUP:
+                    this.validatorIndex = 0;
+                    this.validatorLoop(_config.Events.KEYUP);
+                    break;
+            }
+        };
+
+        FormField.prototype.listeners = function listeners() {
+            this._fieldElem.addEventListener(_config.Events.KEYUP, this, false);
+            this._fieldElem.addEventListener(_config.Events.CHANGE, this, false);
         };
 
         FormField.prototype.subscribe = function subscribe() {
             this.subCBSuccess = _utils.pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));
             this.subCBError = _utils.pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
-            this.subCBIgnore = _utils.pubSub.subscribe('field:callbackIgnore', this.callbackIgnore.bind(this));
+            this.subCBDestroy = _utils.pubSub.subscribe('field:destroy', this.destroy.bind(this));
         };
 
         FormField.prototype.callbackSuccess = function callbackSuccess(obj) {
             if (this.uniqueId === obj.uniqueId) {
-                this.clearError();
                 this.enable();
+                this.clearError();
             }
         };
 
         FormField.prototype.callbackError = function callbackError(obj) {
             if (this.uniqueId === obj.uniqueId) {
                 this.enable();
-                if (this.fieldState !== _config.validatorState.ERROR) {
+                if (this._validators[this.validatorIndex].state !== _config.validatorState.ERROR) {
                     this.showError(obj.key);
                 }
             }
         };
 
-        FormField.prototype.callbackIgnore = function callbackIgnore(obj) {
-            if (this.uniqueId === obj.uniqueId) {
-                this.enable();
-            }
+        FormField.prototype.handshake = function handshake(validatorKey, fieldValue) {
+            _utils.pubSub.publish('handshake:execute', {
+                uniqueId: this.uniqueId,
+                fieldName: this.fieldName,
+                fieldValue: fieldValue,
+                key: validatorKey
+            });
         };
 
-        FormField.prototype.listener = function listener() {
-            this._fieldElem.addEventListener('keyup', this.validate.bind(this), false);
-        };
+        FormField.prototype.validatorLoop = function validatorLoop(event) {
+            var fieldValue = this._fieldElem.value,
+                validator = null,
+                validators = this._validators;
 
-        FormField.prototype.disable = function disable() {
-            this._fieldElem.disabled = true;
-        };
-
-        FormField.prototype.enable = function enable() {
-            this._fieldElem.disabled = false;
-        };
-
-        FormField.prototype.validate = function validate() {
-            this.fieldValue = this._fieldElem.value;
-            this.fieldState = _config.validatorState.WAIT;
-            for (var _iterator = this._validators, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-                var _ref;
-
-                if (_isArray) {
-                    if (_i >= _iterator.length) break;
-                    _ref = _iterator[_i++];
-                } else {
-                    _i = _iterator.next();
-                    if (_i.done) break;
-                    _ref = _i.value;
-                }
-
-                var validator = _ref;
-
-                validator.validate(this.fieldValue);
-                if (validator.state === _config.validatorState.ERROR) {
-                    this.showError(validator.key);
-                    this.fieldState = _config.validatorState.ERROR;
-                    return;
-                } else if (validator.state === _config.validatorState.HANDSHAKE) {
-                    this.disable();
+            for (var i = this.validatorIndex, len = this._validators.length; i < len; i++) {
+                validator = validators[i];
+                if (event === validator.event || validator.event === _config.Events.KEYUP) {
+                    this.validatorIndex = i;
                     this.clearError();
-                    this.fieldState = _config.validatorState.HANDSHAKE;
-                    _utils.pubSub.publish('handshake:execute', {
-                        key: validator.key,
-                        fieldName: this.fieldName,
-                        fieldValue: this.fieldValue,
-                        uniqueId: self.uniqueId
-                    });
-                    return;
+                    validator.validate(fieldValue);
+                    if (validator.isHandshake()) {
+                        this.handshake(validator.key, fieldValue);
+                        return;
+                    } else if (validator.isError()) {
+                        this.showError(validator.key);
+                        return;
+                    }
                 }
             }
-            // this.fieldValidator = validator;
-            this.fieldState = _config.validatorState.SUCCESS;
+            // SUCCESS STATE
             this.clearError();
+        };
+
+        FormField.prototype.showError = function showError(key) {
+            _utils.pubSub.publish('messages:show', {
+                fieldName: this.fieldName,
+                formName: this.formName,
+                key: key
+            });
+        };
+
+        FormField.prototype.clearError = function clearError() {
+            _utils.pubSub.publish('messages:clear', {
+                fieldName: this.fieldName,
+                formName: this.formName
+            });
         };
 
         FormField.prototype.registerValidators = function registerValidators() {
@@ -289,27 +296,23 @@
             }
         };
 
-        FormField.prototype.showError = function showError(key) {
-            _utils.pubSub.publish('messages:show', {
-                fieldName: this.fieldName,
-                formName: this.formName,
-                key: key
-            });
+        FormField.prototype.enable = function enable() {
+            this._fieldElem.disabled = false;
         };
 
-        FormField.prototype.clearError = function clearError() {
-            _utils.pubSub.publish('messages:clear', {
-                fieldName: this.fieldName,
-                formName: this.formName
-            });
+        FormField.prototype.disable = function disable() {
+            this._fieldElem.disabled = true;
         };
 
         FormField.prototype.destroy = function destroy() {
-            this._fieldElem.removeEventListener('keyup', this.validate.bind(this), false);
-            this.subCBSuccess.remove();
-            this.subCBError.remove();
+            console.log("fields are destroyed!");
+            this._fieldElem.removeEventListener('keyup', this, false);
+            this._fieldElem.removeEventListener('change', this, false);
             this._fieldElem = null;
             this._validators.length = 0;
+            this.subCBSuccess.remove();
+            this.subCBError.remove();
+            this.subCBDestroy.remove();
         };
 
         return FormField;
@@ -363,6 +366,11 @@
         Form.prototype.onInit = function onInit() {
             this.name = this._elem.getAttribute("name");
             this.registerFormFields();
+            this.subscribe();
+        };
+
+        Form.prototype.subscribe = function subscribe() {
+            this.subCBDestroy = _utils.pubSub.subscribe('form:destroy', this.destroy.bind(this));
         };
 
         Form.prototype.registerFormFields = function registerFormFields() {
@@ -374,8 +382,10 @@
         };
 
         Form.prototype.destroy = function destroy() {
+            console.log('form is destroyed');
             this._elem = null;
             this._fields.length = 0;
+            this.subCBDestroy.remove();
         };
 
         return Form;
@@ -443,22 +453,25 @@
     }
 
     var Main = function () {
-        function Main() {
+        function Main(formName) {
             _classCallCheck(this, Main);
 
             this._messages = [];
             this._forms = [];
+            this._handshake = null;
         }
 
-        Main.prototype.onInit = function onInit() {
+        Main.prototype._init = function _init(formName) {
+            this._handshake = new _handshake2.default();
             this._registerMessages();
-            this._registerForms();
+            this._registerForm(formName);
         };
 
-        Main.prototype._registerForms = function _registerForms() {
+        Main.prototype._registerForm = function _registerForm(formName) {
             var _this = this;
 
-            (0, _utils.nl2arr)(document.querySelectorAll(_config.fieldQuery.form)).forEach(function (formElem) {
+            var query = formName ? _config.fieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
+            (0, _utils.nl2arr)(document.querySelectorAll(query)).forEach(function (formElem) {
                 _this._forms.push(new _form2.default(formElem));
             });
         };
@@ -471,9 +484,16 @@
             });
         };
 
-        Main.prototype.destroy = function destroy() {
+        Main.prototype._destroy = function _destroy() {
+            console.log('main is destroyed');
+            _utils.pubSub.publish('field:destroy', {});
+            _utils.pubSub.publish('messages:destroy', {});
+            _utils.pubSub.publish('handshake:destroy', {});
+            _utils.pubSub.publish('form:destroy', {});
+            _utils.pubSub.publish('validator:destroy', {});
             this._messages.length = 0;
             this._forms.length = 0;
+            this._handshake = null;
         };
 
         return Main;
@@ -503,6 +523,7 @@
         };
 
         Gator.prototype.validator = function validator(key, fn, required, priority) {
+            // TO-DO: Check for correct parameters
             _config.rules[key] = {
                 fn: fn,
                 priority: priority || 0,
@@ -512,8 +533,14 @@
             return this;
         };
 
-        Gator.prototype.init = function init() {
-            return this.onInit();
+        Gator.prototype.destroy = function destroy() {
+            this._destroy();
+            return this;
+        };
+
+        Gator.prototype.init = function init(formName) {
+            this._init(formName);
+            return this;
         };
 
         return Gator;
@@ -582,8 +609,9 @@
 
         Handshake.prototype.subscribe = function subscribe() {
             this.subRegister = _utils.pubSub.subscribe('handshake:register', this.register.bind(this));
-            this.subExecute = _utils.pubSub.subscribe('handshake:addField', this.addField.bind(this));
+            this.subAddField = _utils.pubSub.subscribe('handshake:addField', this.addField.bind(this));
             this.subExecute = _utils.pubSub.subscribe('handshake:execute', this.execute.bind(this));
+            this.subDestroy = _utils.pubSub.subscribe('handshake:destroy', this.destroy.bind(this));
             // this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
         };
 
@@ -640,17 +668,18 @@
         };
 
         Handshake.prototype.destroy = function destroy() {
+            console.log('handshake is destroyed.');
             this._handshakes = null;
             this.subRegister.remove();
+            this.subAddField.remove();
             this.subExecute.remove();
-            this.subExecute.remove();
-            this.subReset.remove();
+            this.subDestroy.remove();
         };
 
         return Handshake;
     }();
 
-    module.exports = new Handshake();
+    module.exports = Handshake;
 });
 
 },{"./config.js":1,"./form-field":2,"./utils":7}],6:[function(require,module,exports){
@@ -739,6 +768,7 @@
         };
 
         Message.prototype.destroy = function destroy() {
+            console.log('messages are destroyed');
             this._elem = null;
             this._messages = null;
             this.subShow.remove();
@@ -855,13 +885,21 @@
             this.fieldName = fieldName;
             this.fieldUniqueId = fieldUniqueId;
             this.state = _config.validatorState.INIT;
-            this.params = params.length ? params.split(',') : [];
+
+            var p = params.match(/^(.*?)(?:\:(\w*)){0,1}$/);
+            this.params = p[1] ? p[1].split(',') : null;
+            this.event = p[2] || _config.Events.KEYUP;
             this.onInit();
         }
 
         Validator.prototype.onInit = function onInit() {
             this.setPriority();
             this.setHandshake();
+            this.subscribe();
+        };
+
+        Validator.prototype.subscribe = function subscribe() {
+            this.subCBDestroy = _utils.pubSub.subscribe('validator:destroy', this.destroy.bind(this));
         };
 
         Validator.prototype.setPriority = function setPriority() {
@@ -892,8 +930,18 @@
             }
         };
 
+        Validator.prototype.isHandshake = function isHandshake() {
+            return this.state === _config.validatorState.HANDSHAKE;
+        };
+
+        Validator.prototype.isError = function isError() {
+            return this.state === _config.validatorState.ERROR;
+        };
+
         Validator.prototype.destroy = function destroy() {
+            console.log('valdidator is destroyed!');
             this.params.length = 0;
+            this.subCBDestroy.remove();
         };
 
         return Validator;
