@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+    <title>Gator.js - Simple Registration</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <link rel="stylesheet" href="stylesheets/app.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <div> 
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+          <div class="container">
+            <div class="navbar-header">
+              <a class="navbar-brand" href="#">Gator.js</a>
+          </div>
+        </div>
+      </nav>
+      <div class="container">
+        <div class="starter-template">
+            <ul class="nav nav-pills">
+                <li role="presentation"><a href="demo.html">Registration Demo</a></li>
+                <li role="presentation" class="active"><a href="#">Login Demo</a></li>
+            </ul>
+            <br/>
+            <form name="simpleLogin" class="form-horizontal" action='' method="POST">
+                <fieldset>
+                    <div id="legend">
+                        <legend class="">Login</legend>
+                    </div>
+                    <div class="control-group">
+                    <!-- E-mail -->
+                        <label class="control-label" for="email">E-mail</label>
+                        <div class="controls">
+                            <input type="text" name="email" class="form-control" 
+                                gt-type="email"
+                                gt-custom-login=":change"
+                                required>
+                            <div gt-messages="simpleLogin.email" style="color:red" role="alert">
+                                <div gt-message="required">Email is required.</div>
+                                <div gt-message="type">Must be a valid Email.</div>
+                                <div gt-message="customLogin">Login and Password are incorrect.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <!-- Password-->
+                        <label class="control-label" for="password">Password</label>
+                        <div class="controls">
+                            <input type="password" name="password" class="form-control" 
+                                gt-minlength="6"
+                                gt-maxlength="15" 
+                                gt-custom-login=":change"
+                                required>
+                            <div gt-messages="simpleLogin.password" style="color:red" role="alert">
+                                <div gt-message="required">Password is required.</div>
+                                <div gt-message="minlength">Password is too short.</div>
+                                <div gt-message="maxlength">Password is too long.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+                    <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
+                    <strong>Correct username and password: andrew@gmail.com/abc123</strong>
+                 </fieldset>
+            </form>              
+        </div>  
+     </div>    
+   <script src="js/gator.js"></script>
+    <script>
+       
+        (function() {
+ 
+            function customLogin(fields, success, error) {
+                window.setTimeout(function() {
+                    if(fields.email.value === "andrew@gmail.com" && fields.password.value === "abc123") {
+                        success();
+                    } else {
+                        error();
+                    }
+                }, 2000);
+            }
+
+           var gator = new Gator()
+                .validator('customLogin', customLogin, true)
+                .init('simpleLogin');
+
+        }());
+        
+    </script>
+  </body>
+</html>

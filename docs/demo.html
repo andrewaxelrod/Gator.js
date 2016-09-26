@@ -22,6 +22,11 @@
       </nav>
       <div class="container">
         <div class="starter-template">
+            <ul class="nav nav-pills">
+                <li role="presentation" class="active"><a href="#">Registration Demo</a></li>
+                <li role="presentation"><a href="demo2.html">Login Demo</a></li>
+            </ul>
+            <br/>
             <form name="simpleRegistration" class="form-horizontal" action='' method="POST">
                 <fieldset>
                     <div id="legend">
@@ -32,8 +37,8 @@
                     <label class="control-label"  for="username">Username</label>
                     <div class="controls">
                         <input type="text" name="username" class="form-control" 
-                                gt-minlength="5,7,7,7"
-                                gt-maxlength="15"
+                                gt-minlength="5"
+                                gt-maxlength="10"
                                 gt-type='customUsername'
                                 gt-custom-username-exists=":change"
                                 required>
@@ -90,6 +95,9 @@
                         </div>
                     </div>
                     </div>
+                    <br/>
+                    <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
+                    <strong>For username, enter a username that is already taken: andrew11</strong>
             </form>              
         </div>  
      </div>    
@@ -100,15 +108,15 @@
  
             function customUsernameExists(fields, success, error) {
                 window.setTimeout(function() {
-                    if(fields.username.value === "magic123") {
-                        success();
-                    } else {
+                    if(fields.username.value === "andrew11") {
                         error();
+                    } else {
+                        success();
                     }
                 }, 2000);
             }
 
-           var gator = new Gator({listener: 'change'})
+           var gator = new Gator({listener: 'keyup'})
                 .addRuleType('customUsername', /^[a-zA-Z0-9]+$/)
                 .validator('customUsernameExists', customUsernameExists, true)
                 .init('simpleRegistration');
