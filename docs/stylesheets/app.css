@@ -5,7 +5,7 @@ body {
   padding: 40px 15px;
 }
 
-.hideBorder {
+.hideBorder { 
   border: 0;
   -webkit-box-shadow: none;
     box-shadow: none;
