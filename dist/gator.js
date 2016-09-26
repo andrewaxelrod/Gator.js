@@ -17,12 +17,16 @@
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  var validatorState = exports.validatorState = {
+  var PREFIX = exports.PREFIX = 'gt';
+
+  var PRIORITY_DEFAULT = exports.PRIORITY_DEFAULT = 30;
+
+  var ValidatorState = exports.ValidatorState = {
     INIT: 0,
     WAIT: 1,
     SUCCESS: 2,
     ERROR: 4,
-    HANDSHAKE: 5
+    HANDLER: 5
   };
 
   var Events = exports.Events = {
@@ -30,15 +34,7 @@
     CHANGE: 'change'
   };
 
-  var objType = exports.objType = {
-    FIELD: 0,
-    FORM: 1,
-    MESSAGE: 2
-  };
-
-  var PREFIX = exports.PREFIX = 'gt';
-
-  var fieldQuery = exports.fieldQuery = {
+  var FieldQuery = exports.FieldQuery = {
     prefix: '^' + PREFIX,
     input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
     select: ',select[required]:not(:disabled):not([readonly])',
@@ -48,13 +44,13 @@
     message: '[' + PREFIX + '-message]'
   };
 
-  var attributes = exports.attributes = {
+  var Attributes = exports.Attributes = {
     prefix: PREFIX + '-',
     messages: PREFIX + '-messages',
     message: PREFIX + '-message'
   };
 
-  var ruleTypes = exports.ruleTypes = {
+  var RuleTypes = exports.RuleTypes = {
     email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
     number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
     integer: /^-?\d+$/,
@@ -64,38 +60,36 @@
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
   };
 
-  var PRIORITY_DEFAULT = exports.PRIORITY_DEFAULT = 30;
-
-  var rules = exports.rules = {
+  var Rules = exports.Rules = {
     required: {
       fn: function fn(value) {
         return (/\S/.test(value)
         );
       },
       priority: 1024,
-      handshake: false
+      handler: false
     },
     type: {
       fn: function fn(value) {
-        var regex = ruleTypes[this.params[0]];
+        var regex = RuleTypes[this.params[0]];
         return regex.test(value);
       },
       priority: 256,
-      handshake: false
+      handler: false
     },
     minlength: {
       fn: function fn(value) {
         return value.length >= this.params[0];
       },
       priority: 512,
-      handshake: false
+      handler: false
     },
     maxlength: {
       fn: function fn(value) {
         return value.length <= this.params[0];
       },
       priority: 512,
-      handshake: false
+      handler: false
     },
     group: {
       fn: function fn(fields, success, error) {
@@ -108,7 +102,7 @@
         success();
       },
       priority: 0,
-      handshake: true,
+      handler: true,
       required: false
     },
     same: {
@@ -123,8 +117,8 @@
         success();
       },
       priority: 0,
-      handshake: true,
-      required: true // All fields must pass all initial validators up until the handshake or won't be called.
+      handler: true,
+      required: true // All fields must pass all initial validators up until the handler or won't be called.
     }
   };
 });
@@ -179,6 +173,11 @@
             this.listeners();
         };
 
+        FormField.prototype.listeners = function listeners() {
+            this._fieldElem.addEventListener(_config.Events.KEYUP, this, false);
+            this._fieldElem.addEventListener(_config.Events.CHANGE, this, false);
+        };
+
         FormField.prototype.handleEvent = function handleEvent(event) {
             switch (event.type) {
                 case _config.Events.CHANGE:
@@ -191,12 +190,8 @@
             }
         };
 
-        FormField.prototype.listeners = function listeners() {
-            this._fieldElem.addEventListener(_config.Events.KEYUP, this, false);
-            this._fieldElem.addEventListener(_config.Events.CHANGE, this, false);
-        };
-
         FormField.prototype.subscribe = function subscribe() {
+            this.subCBDisable = _utils.pubSub.subscribe('field:disable', this.callbackDisable.bind(this));
             this.subCBSuccess = _utils.pubSub.subscribe('field:callbackSuccess', this.callbackSuccess.bind(this));
             this.subCBError = _utils.pubSub.subscribe('field:callbackError', this.callbackError.bind(this));
             this.subCBDestroy = _utils.pubSub.subscribe('field:destroy', this.destroy.bind(this));
@@ -212,14 +207,20 @@
         FormField.prototype.callbackError = function callbackError(obj) {
             if (this.uniqueId === obj.uniqueId) {
                 this.enable();
-                if (this._validators[this.validatorIndex].state !== _config.validatorState.ERROR) {
+                if (this._validators[this.validatorIndex].state !== _config.ValidatorState.ERROR) {
                     this.showError(obj.key);
                 }
             }
         };
 
-        FormField.prototype.handshake = function handshake(validatorKey, fieldValue) {
-            _utils.pubSub.publish('handshake:execute', {
+        FormField.prototype.callbackDisable = function callbackDisable(obj) {
+            if (this.uniqueId === obj.uniqueId) {
+                this.disable();
+            }
+        };
+
+        FormField.prototype.handler = function handler(validatorKey, fieldValue) {
+            _utils.pubSub.publish('handler:execute', {
                 uniqueId: this.uniqueId,
                 fieldName: this.fieldName,
                 fieldValue: fieldValue,
@@ -238,8 +239,8 @@
                     this.validatorIndex = i;
                     this.clearError();
                     validator.validate(fieldValue);
-                    if (validator.isHandshake()) {
-                        this.handshake(validator.key, fieldValue);
+                    if (validator.isHandler()) {
+                        this.handler(validator.key, fieldValue);
                         return;
                     } else if (validator.isError()) {
                         this.showError(validator.key);
@@ -271,11 +272,11 @@
 
             var self = this,
                 attribute = null,
-                regex = new RegExp(_config.fieldQuery.prefix, 'i');
+                regex = new RegExp(_config.FieldQuery.prefix, 'i');
 
             (0, _utils.nl2arr)(this._fieldElem.attributes).forEach(function (attr) {
                 if (attr.name && regex.test(attr.name) && attr.specified) {
-                    attribute = attr.name.slice(_config.attributes.prefix.length);
+                    attribute = attr.name.slice(_config.Attributes.prefix.length);
                 } else if (attr.name === 'required' && attr.specified) {
                     attribute = 'required';
                 } else {
@@ -313,6 +314,7 @@
             this.subCBSuccess.remove();
             this.subCBError.remove();
             this.subCBDestroy.remove();
+            this.subCBDisable.remove();
         };
 
         return FormField;
@@ -376,7 +378,7 @@
         Form.prototype.registerFormFields = function registerFormFields() {
             var _this = this;
 
-            (0, _utils.nl2arr)(this._elem.querySelectorAll(_config.fieldQuery.input + _config.fieldQuery.select + _config.fieldQuery.textarea)).forEach(function (fieldElem) {
+            (0, _utils.nl2arr)(this._elem.querySelectorAll(_config.FieldQuery.input + _config.FieldQuery.select + _config.FieldQuery.textarea)).forEach(function (fieldElem) {
                 _this._fields.push(new _formField2.default(fieldElem, _this.name));
             });
         };
@@ -397,24 +399,24 @@
 },{"./config.js":1,"./form-field":2,"./messages":6,"./utils.js":7}],4:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
-        define(['module', './config', './utils.js', './form', './messages', './handshake'], factory);
+        define(['module', './config', './utils.js', './form', './messages', './handler'], factory);
     } else if (typeof exports !== "undefined") {
-        factory(module, require('./config'), require('./utils.js'), require('./form'), require('./messages'), require('./handshake'));
+        factory(module, require('./config'), require('./utils.js'), require('./form'), require('./messages'), require('./handler'));
     } else {
         var mod = {
             exports: {}
         };
-        factory(mod, global.config, global.utils, global.form, global.messages, global.handshake);
+        factory(mod, global.config, global.utils, global.form, global.messages, global.handler);
         global.gator = mod.exports;
     }
-})(this, function (module, _config, _utils, _form, _messages, _handshake) {
+})(this, function (module, _config, _utils, _form, _messages, _handler) {
     'use strict';
 
     var _form2 = _interopRequireDefault(_form);
 
     var _messages2 = _interopRequireDefault(_messages);
 
-    var _handshake2 = _interopRequireDefault(_handshake);
+    var _handler2 = _interopRequireDefault(_handler);
 
     function _interopRequireDefault(obj) {
         return obj && obj.__esModule ? obj : {
@@ -458,11 +460,11 @@
 
             this._messages = [];
             this._forms = [];
-            this._handshake = null;
+            this._handler = null;
         }
 
         Main.prototype._init = function _init(formName) {
-            this._handshake = new _handshake2.default();
+            this._handler = new _handler2.default();
             this._registerMessages();
             this._registerForm(formName);
         };
@@ -470,7 +472,7 @@
         Main.prototype._registerForm = function _registerForm(formName) {
             var _this = this;
 
-            var query = formName ? _config.fieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
+            var query = formName ? _config.FieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
             (0, _utils.nl2arr)(document.querySelectorAll(query)).forEach(function (formElem) {
                 _this._forms.push(new _form2.default(formElem));
             });
@@ -479,7 +481,7 @@
         Main.prototype._registerMessages = function _registerMessages() {
             var _this2 = this;
 
-            (0, _utils.nl2arr)(document.querySelectorAll(_config.fieldQuery.messages)).forEach(function (msgElem) {
+            (0, _utils.nl2arr)(document.querySelectorAll(_config.FieldQuery.messages)).forEach(function (msgElem) {
                 _this2._messages.push(new _messages2.default(msgElem));
             });
         };
@@ -488,12 +490,12 @@
             console.log('main is destroyed');
             _utils.pubSub.publish('field:destroy', {});
             _utils.pubSub.publish('messages:destroy', {});
-            _utils.pubSub.publish('handshake:destroy', {});
+            _utils.pubSub.publish('handler:destroy', {});
             _utils.pubSub.publish('form:destroy', {});
             _utils.pubSub.publish('validator:destroy', {});
             this._messages.length = 0;
             this._forms.length = 0;
-            this._handshake = null;
+            this._handler = null;
         };
 
         return Main;
@@ -512,22 +514,22 @@
             if (!exp instanceof RegExp) {
                 throw new Error(exp + ' must be a regular expression');
             }
-            if (_config.ruleTypes.hasOwnProperty(type)) {
+            if (_config.RuleTypes.hasOwnProperty(type)) {
                 throw new Error(type + ' already exists as a rule type');
             }
             if (typeof type !== 'string') {
                 throw new Error(type + ' must be a string.');
             }
-            _config.ruleTypes[type] = exp;
+            _config.RuleTypes[type] = exp;
             return this;
         };
 
         Gator.prototype.validator = function validator(key, fn, required, priority) {
             // TO-DO: Check for correct parameters
-            _config.rules[key] = {
+            _config.Rules[key] = {
                 fn: fn,
                 priority: priority || 0,
-                handshake: true,
+                handler: true,
                 required: required || false
             };
             return this;
@@ -549,7 +551,7 @@
     module.exports = Gator;
 });
 
-},{"./config":1,"./form":3,"./handshake":5,"./messages":6,"./utils.js":7}],5:[function(require,module,exports){
+},{"./config":1,"./form":3,"./handler":5,"./messages":6,"./utils.js":7}],5:[function(require,module,exports){
 (function (global, factory) {
     if (typeof define === "function" && define.amd) {
         define(["module", "./utils", "./form-field", "./config.js"], factory);
@@ -560,7 +562,7 @@
             exports: {}
         };
         factory(mod, global.utils, global.formField, global.config);
-        global.handshake = mod.exports;
+        global.handler = mod.exports;
     }
 })(this, function (module, _utils, _formField, _config) {
     "use strict";
@@ -589,54 +591,53 @@
         }
 
         fieldWrapper.prototype.isType = function isType(type) {
-            return _config.rules.type.fn.call({ params: [type] }, this.value);
+            return _config.Rules.type.fn.call({ params: [type] }, this.value);
         };
 
         return fieldWrapper;
     }();
 
-    var Handshake = function () {
-        function Handshake() {
-            _classCallCheck(this, Handshake);
+    var Handler = function () {
+        function Handler() {
+            _classCallCheck(this, Handler);
 
-            this._handshakes = {};
+            this._handlers = {};
             this.onInit();
         }
 
-        Handshake.prototype.onInit = function onInit() {
+        Handler.prototype.onInit = function onInit() {
             this.subscribe();
         };
 
-        Handshake.prototype.subscribe = function subscribe() {
-            this.subRegister = _utils.pubSub.subscribe('handshake:register', this.register.bind(this));
-            this.subAddField = _utils.pubSub.subscribe('handshake:addField', this.addField.bind(this));
-            this.subExecute = _utils.pubSub.subscribe('handshake:execute', this.execute.bind(this));
-            this.subDestroy = _utils.pubSub.subscribe('handshake:destroy', this.destroy.bind(this));
-            // this.subReset = pubSub.subscribe('handshake:reset', this.reset.bind(this)); 
+        Handler.prototype.subscribe = function subscribe() {
+            this.subRegister = _utils.pubSub.subscribe('handler:register', this.register.bind(this));
+            this.subAddField = _utils.pubSub.subscribe('handler:addField', this.addField.bind(this));
+            this.subExecute = _utils.pubSub.subscribe('handler:execute', this.execute.bind(this));
+            this.subDestroy = _utils.pubSub.subscribe('handler:destroy', this.destroy.bind(this));
         };
 
-        Handshake.prototype.register = function register(obj) {
-            if (!this._handshakes.hasOwnProperty(obj.key)) {
-                this._handshakes[obj.key] = {
+        Handler.prototype.register = function register(obj) {
+            if (!this._handlers.hasOwnProperty(obj.key)) {
+                this._handlers[obj.key] = {
                     fields: {},
                     key: obj.key
                 };
             }
         };
 
-        Handshake.prototype.addField = function addField(obj) {
+        Handler.prototype.addField = function addField(obj) {
             this.register(obj);
-            this._handshakes[obj.key].fields[obj.fieldName] = new fieldWrapper(obj.uniqueId);
+            this._handlers[obj.key].fields[obj.fieldName] = new fieldWrapper(obj.uniqueId);
         };
 
-        Handshake.prototype.setFieldReady = function setFieldReady(key, fieldName, value) {
-            var field = this._handshakes[key].fields[fieldName];
+        Handler.prototype.setFieldReady = function setFieldReady(key, fieldName, value) {
+            var field = this._handlers[key].fields[fieldName];
             field.value = value;
             field.ready = true;
         };
 
-        Handshake.prototype.checkFieldsReady = function checkFieldsReady(key) {
-            var fields = this._handshakes[key].fields;
+        Handler.prototype.checkFieldsReady = function checkFieldsReady(key) {
+            var fields = this._handlers[key].fields;
             for (var field in fields) {
                 if (fields.hasOwnProperty(field)) {
                     if (!fields[field].ready) {
@@ -647,16 +648,28 @@
             return true;
         };
 
-        Handshake.prototype.execute = function execute(obj) {
-            var required = _config.rules[obj.key].hasOwnProperty('required') ? _config.rules[obj.key].required : false;
-            this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
-            if (this.checkFieldsReady(obj.key) || !required) {
-                // Execute Function
-                _config.rules[obj.key].fn(this._handshakes[obj.key].fields, this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'), this.callback.bind(this._handshakes[obj.key], 'field:callbackError'), this.callback.bind(this._handshakes[obj.key], 'field:callbackIgnore'));
+        Handler.prototype.disableFields = function disableFields(key) {
+            var fields = this._handlers[key].fields;
+            for (var field in fields) {
+                if (fields.hasOwnProperty(field)) {
+                    _utils.pubSub.publish('field:disable', {
+                        uniqueId: fields[field].uniqueId
+                    });
+                }
             }
         };
 
-        Handshake.prototype.callback = function callback(event) {
+        Handler.prototype.execute = function execute(obj) {
+            var required = _config.Rules[obj.key].hasOwnProperty('required') ? _config.Rules[obj.key].required : false;
+            this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
+            if (this.checkFieldsReady(obj.key) || !required) {
+                this.disableFields(obj.key);
+                // Execute Function
+                _config.Rules[obj.key].fn(this._handlers[obj.key].fields, this.callback.bind(this._handlers[obj.key], 'field:callbackSuccess'), this.callback.bind(this._handlers[obj.key], 'field:callbackError'), this.callback.bind(this._handlers[obj.key], 'field:callbackIgnore'));
+            }
+        };
+
+        Handler.prototype.callback = function callback(event) {
             for (var field in this.fields) {
                 if (this.fields.hasOwnProperty(field)) {
                     _utils.pubSub.publish(event, {
@@ -667,19 +680,19 @@
             }
         };
 
-        Handshake.prototype.destroy = function destroy() {
-            console.log('handshake is destroyed.');
-            this._handshakes = null;
+        Handler.prototype.destroy = function destroy() {
+            console.log('handler is destroyed.');
+            this._handlers = null;
             this.subRegister.remove();
             this.subAddField.remove();
             this.subExecute.remove();
             this.subDestroy.remove();
         };
 
-        return Handshake;
+        return Handler;
     }();
 
-    module.exports = Handshake;
+    module.exports = Handler;
 });
 
 },{"./config.js":1,"./form-field":2,"./utils":7}],6:[function(require,module,exports){
@@ -716,7 +729,7 @@
         }
 
         Message.prototype.onInit = function onInit() {
-            var attrs = this._elem.getAttribute(_config.attributes.messages).split('.');
+            var attrs = this._elem.getAttribute(_config.Attributes.messages).split('.');
             this.formName = attrs[0];
             this.fieldName = attrs[1];
             this.registerBlockMessages();
@@ -759,8 +772,8 @@
         Message.prototype.registerBlockMessages = function registerBlockMessages() {
             var self = this,
                 key = null;
-            (0, _utils.nl2arr)(this._elem.querySelectorAll(_config.fieldQuery.message)).forEach(function (msgElem) {
-                key = msgElem.getAttribute(_config.attributes.message);
+            (0, _utils.nl2arr)(this._elem.querySelectorAll(_config.FieldQuery.message)).forEach(function (msgElem) {
+                key = msgElem.getAttribute(_config.Attributes.message);
                 if (key) {
                     self._messages[key] = msgElem;
                 }
@@ -808,21 +821,15 @@
     return Array.prototype.slice.call(nodeList);
   };
 
+  // Mini PubSub by David Walsh.  
   // https://davidwalsh.name/pubsub-javascript
   var pubSub = exports.pubSub = function () {
-
     var topics = {};
     var hOP = topics.hasOwnProperty;
-
     return {
       subscribe: function subscribe(topic, listener) {
-        // Create the topic's object if not yet created
         if (!hOP.call(topics, topic)) topics[topic] = [];
-
-        // Add the listener to queue
         var index = topics[topic].push(listener) - 1;
-
-        // Provide handle back for removal of topic
         return {
           remove: function remove() {
             delete topics[topic][index];
@@ -830,10 +837,7 @@
         };
       },
       publish: function publish(topic, info) {
-        // If the topic doesn't exist, or there's no listeners in queue, just leave
         if (!hOP.call(topics, topic)) return;
-
-        // Cycle through topics queue, fire!
         topics[topic].forEach(function (item) {
           item(info != undefined ? info : {});
         });
@@ -841,6 +845,8 @@
     };
   }();
 
+  // Unique ID
+  // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
   function getUniqueId() {
     function s4() {
       return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -884,7 +890,7 @@
             this.key = key;
             this.fieldName = fieldName;
             this.fieldUniqueId = fieldUniqueId;
-            this.state = _config.validatorState.INIT;
+            this.state = _config.ValidatorState.INIT;
 
             var p = params.match(/^(.*?)(?:\:(\w*)){0,1}$/);
             this.params = p[1] ? p[1].split(',') : null;
@@ -894,7 +900,7 @@
 
         Validator.prototype.onInit = function onInit() {
             this.setPriority();
-            this.setHandshake();
+            this.setHandler();
             this.subscribe();
         };
 
@@ -903,16 +909,16 @@
         };
 
         Validator.prototype.setPriority = function setPriority() {
-            if (!_config.rules.hasOwnProperty(this.key)) {
+            if (!_config.Rules.hasOwnProperty(this.key)) {
                 throw new Error('Invalid directive, "gt-' + this.key + '"');
             }
-            this.priority = _config.rules[this.key].priority;
+            this.priority = _config.Rules[this.key].priority;
         };
 
-        Validator.prototype.setHandshake = function setHandshake() {
+        Validator.prototype.setHandler = function setHandler() {
             var self = this;
-            if (_config.rules[this.key].handshake) {
-                _utils.pubSub.publish('handshake:addField', {
+            if (_config.Rules[this.key].handler) {
+                _utils.pubSub.publish('handler:addField', {
                     key: self.key,
                     fieldName: self.fieldName,
                     uniqueId: self.fieldUniqueId
@@ -922,20 +928,20 @@
 
         Validator.prototype.validate = function validate(value) {
             var self = this,
-                rule = _config.rules[this.key];
-            if (rule.handshake === true) {
-                this.state = _config.validatorState.HANDSHAKE;
+                rule = _config.Rules[this.key];
+            if (rule.handler === true) {
+                this.state = _config.ValidatorState.HANDLER;
             } else {
-                this.state = rule.fn.call(this, value) ? _config.validatorState.SUCCESS : _config.validatorState.ERROR;
+                this.state = rule.fn.call(this, value) ? _config.ValidatorState.SUCCESS : _config.ValidatorState.ERROR;
             }
         };
 
-        Validator.prototype.isHandshake = function isHandshake() {
-            return this.state === _config.validatorState.HANDSHAKE;
+        Validator.prototype.isHandler = function isHandler() {
+            return this.state === _config.ValidatorState.HANDLER;
         };
 
         Validator.prototype.isError = function isError() {
-            return this.state === _config.validatorState.ERROR;
+            return this.state === _config.ValidatorState.ERROR;
         };
 
         Validator.prototype.destroy = function destroy() {

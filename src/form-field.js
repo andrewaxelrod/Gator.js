@@ -1,4 +1,4 @@
-import {objType, fieldState, validatorState, attributes, Events, fieldQuery} from "./config.js";
+import {objType, fieldState, ValidatorState, Attributes, Events, FieldQuery} from "./config.js";
 import {getUniqueId, nl2arr, pubSub, convertCamelCase} from "./utils.js";
 import Validator from "./validator"
 
@@ -23,7 +23,7 @@ class FormField {
     }
 
     // Best Practice adding event listeners within an object in order to access it's methods and avoid using bind.
-    // This should work for IE9+ Browsers.
+    // This works in IE9+ Browsers.
     // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
     listeners() {
         this._fieldElem.addEventListener(Events.KEYUP, this, false);
@@ -59,7 +59,7 @@ class FormField {
     callbackError(obj) {  
         if(this.uniqueId === obj.uniqueId) {     
            this.enable();
-           if(this._validators[this.validatorIndex].state !== validatorState.ERROR) {
+           if(this._validators[this.validatorIndex].state !== ValidatorState.ERROR) {
                 this.showError(obj.key); 
             }  
         }
@@ -71,8 +71,8 @@ class FormField {
         }
     }
 
-    handshake(validatorKey, fieldValue) {
-        pubSub.publish('handshake:execute', { 
+    handler(validatorKey, fieldValue) {
+        pubSub.publish('handler:execute', { 
             uniqueId: this.uniqueId,
             fieldName: this.fieldName,
             fieldValue: fieldValue,
@@ -91,8 +91,8 @@ class FormField {
                 this.validatorIndex = i;
                 this.clearError();
                 validator.validate(fieldValue);
-                if(validator.isHandshake()) {
-                    this.handshake(validator.key, fieldValue); 
+                if(validator.isHandler()) {
+                    this.handler(validator.key, fieldValue); 
                     return;
                 } else if(validator.isError()) {
                     this.showError(validator.key);
@@ -122,11 +122,11 @@ class FormField {
     registerValidators() {
         let self = this,
             attribute = null,
-            regex = new RegExp(fieldQuery.prefix, 'i');
+            regex = new RegExp(FieldQuery.prefix, 'i');
 
         nl2arr(this._fieldElem.attributes).forEach((attr) => {
             if( attr.name && regex.test(attr.name) && attr.specified) {
-                attribute = attr.name.slice(attributes.prefix.length);
+                attribute = attr.name.slice(Attributes.prefix.length);
             } else if (attr.name === 'required' && attr.specified) {
                 attribute = 'required';
             } else {

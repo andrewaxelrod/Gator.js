@@ -1,4 +1,4 @@
-import {rules, validatorState, Events} from './config';
+import {Rules, ValidatorState, Events} from './config';
 import {pubSub} from './utils'; 
 
 class Validator { 
@@ -7,7 +7,7 @@ class Validator {
         this.key = key;
         this.fieldName = fieldName;
         this.fieldUniqueId = fieldUniqueId;
-        this.state = validatorState.INIT;    
+        this.state = ValidatorState.INIT;    
 
         let p = params.match(/^(.*?)(?:\:(\w*)){0,1}$/);
         this.params = p[1] ? p[1].split(',') : null;
@@ -17,7 +17,7 @@ class Validator {
 
     onInit() {
         this.setPriority();
-        this.setHandshake();
+        this.setHandler();
         this.subscribe();
     }
 
@@ -26,16 +26,16 @@ class Validator {
     }
 
     setPriority() {
-        if (!rules.hasOwnProperty(this.key)) {
+        if (!Rules.hasOwnProperty(this.key)) {
             throw new Error(`Invalid directive, "gt-${this.key}"`);
         }
-        this.priority = rules[this.key].priority;
+        this.priority = Rules[this.key].priority;
     } 
  
-    setHandshake() {
+    setHandler() {
         let self = this;
-        if(rules[this.key].handshake) {
-            pubSub.publish('handshake:addField', { 
+        if(Rules[this.key].handler) {
+            pubSub.publish('handler:addField', { 
                 key: self.key,
                 fieldName: self.fieldName,
                 uniqueId: self.fieldUniqueId
@@ -45,20 +45,20 @@ class Validator {
 
 	validate(value) {
         let self = this,
-            rule = rules[this.key];
-        if(rule.handshake === true) {
-            this.state = validatorState.HANDSHAKE;
+            rule = Rules[this.key];
+        if(rule.handler === true) {
+            this.state = ValidatorState.HANDLER;
         } else {
-            this.state = rule.fn.call(this, value) ? validatorState.SUCCESS : validatorState.ERROR;
+            this.state = rule.fn.call(this, value) ? ValidatorState.SUCCESS : ValidatorState.ERROR;
         }   
     } 
 
-    isHandshake() {
-        return this.state === validatorState.HANDSHAKE;
+    isHandler() {
+        return this.state === ValidatorState.HANDLER;
     }
 
     isError() {
-        return this.state === validatorState.ERROR;
+        return this.state === ValidatorState.ERROR;
     }
 
     destroy() {

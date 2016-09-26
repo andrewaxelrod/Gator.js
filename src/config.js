@@ -1,10 +1,14 @@
 
-export const validatorState = {
+export const PREFIX = 'gt';
+
+export const PRIORITY_DEFAULT = 30;
+
+export const ValidatorState = {
     INIT: 0,
     WAIT: 1,
     SUCCESS: 2,
     ERROR: 4,
-    HANDSHAKE: 5
+    HANDLER: 5
 };
 
 export const Events = {
@@ -12,15 +16,7 @@ export const Events = {
     CHANGE: 'change' 
 };
 
-export const objType = {
-    FIELD: 0,
-    FORM: 1,
-    MESSAGE: 2 
-};
-
-export const PREFIX = 'gt';
-
-export const  fieldQuery = {
+export const  FieldQuery = {
       prefix: `^${PREFIX}`,
       input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
       select: ',select[required]:not(:disabled):not([readonly])',
@@ -30,13 +26,13 @@ export const  fieldQuery = {
       message: `[${PREFIX}-message]`
 };
 
-export const attributes = {
+export const Attributes = {
     prefix: `${PREFIX}-`,
     messages: `${PREFIX}-messages`,
     message: `${PREFIX}-message`
-}
+};
 
-export const ruleTypes = {
+export const RuleTypes = {
     email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
     number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
     integer: /^-?\d+$/,
@@ -44,39 +40,37 @@ export const ruleTypes = {
     alphanum: /^\w+$/i,
     date: /^(\d{4})-(\d{2})-(\d{2})$/,
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
-}
+};
 
-export const PRIORITY_DEFAULT = 30;
-
-export const rules = { 
+export const Rules = { 
      required: {
         fn: function(value) {
           return (/\S/.test(value));
         },
         priority: 1024,
-        handshake: false
+        handler: false
       }, 
       type: {
         fn: function(value) {
-          var regex = ruleTypes[this.params[0]];
+          var regex = RuleTypes[this.params[0]];
           return regex.test(value);
         },
         priority: 256,
-        handshake: false
+        handler: false
       }, 
       minlength: {
         fn: function(value) {
            return value.length >= this.params[0]
         },
         priority: 512,
-        handshake: false
+        handler: false
       },
       maxlength: {
         fn: function(value) {
            return value.length <= this.params[0]
         },
         priority: 512,
-        handshake: false
+        handler: false
       },
       group: {
         fn: function(fields, success, error) {
@@ -89,7 +83,7 @@ export const rules = {
           success();
         },
         priority: 0,
-        handshake: true,
+        handler: true,
         required: false
       },
       same: {
@@ -104,8 +98,8 @@ export const rules = {
           success(); 
         },
         priority: 0,
-        handshake: true,
-        required: true // All fields must pass all initial validators up until the handshake or won't be called.
+        handler: true,
+        required: true // All fields must pass all initial validators up until the handler or won't be called.
       }
 };
  

@@ -1,7 +1,7 @@
 import FormField from './form-field';
 import Messages from './messages';
 import {nl2arr, pubSub} from "./utils.js";
-import {fieldQuery} from "./config.js";
+import {FieldQuery} from "./config.js";
 
 class Form { 
  
@@ -24,9 +24,9 @@ class Form {
 
     registerFormFields() {
         nl2arr(this._elem.querySelectorAll(
-            fieldQuery.input+ 
-            fieldQuery.select+
-            fieldQuery.textarea))
+            FieldQuery.input+ 
+            FieldQuery.select+
+            FieldQuery.textarea))
                 .forEach((fieldElem)  => {
                     this._fields.push(new FormField(fieldElem, this.name));
                 });  

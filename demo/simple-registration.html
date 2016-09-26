@@ -100,14 +100,13 @@
  
             function customUsernameExists(fields, success, error) {
                 window.setTimeout(function() {
-                    error();
+                    if(fields.username.value === "magic123") {
+                        success();
+                    } else {
+                        error();
+                    }
                 }, 2000);
             }
-
-            function customPassword(fields, success, error) {
-
-            }
-
 
            var gator = new Gator({listener: 'change'})
                 .addRuleType('customUsername', /^[a-zA-Z0-9]+$/)

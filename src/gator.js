@@ -1,25 +1,25 @@
-import {fieldQuery, ruleTypes, rules} from './config';
+import {FieldQuery, RuleTypes, Rules} from './config';
 import {nl2arr, pubSub} from "./utils.js";
 import Form from './form';
 import Message from './messages';
-import Handshake from './handshake';
+import Handler from './handler';
 
 class Main { 
  
     constructor(formName) {  
         this._messages = []; 
         this._forms = [];
-        this._handshake = null;
+        this._handler = null;
     }
 
     _init(formName) {
-        this._handshake = new Handshake();
+        this._handler = new Handler();
         this._registerMessages();
         this._registerForm(formName);
     }
 
     _registerForm(formName) {
-        let query = formName ? fieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
+        let query = formName ? FieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
         nl2arr(document.querySelectorAll(query))
             .forEach((formElem)  => {
                 this._forms.push(new Form(formElem));
@@ -27,7 +27,7 @@ class Main {
     }
 
     _registerMessages() {
-        nl2arr(document.querySelectorAll(fieldQuery.messages))
+        nl2arr(document.querySelectorAll(FieldQuery.messages))
             .forEach((msgElem)  => {
                 this._messages.push(new Message(msgElem));
             });  
@@ -37,12 +37,12 @@ class Main {
         console.log('main is destroyed');
         pubSub.publish('field:destroy', {});
         pubSub.publish('messages:destroy', {});
-        pubSub.publish('handshake:destroy', {});
+        pubSub.publish('handler:destroy', {});
         pubSub.publish('form:destroy', {});
         pubSub.publish('validator:destroy', {});
         this._messages.length = 0;
         this._forms.length = 0;
-        this._handshake = null;
+        this._handler = null;
     }
 }
 
@@ -56,23 +56,23 @@ class Gator extends Main {
         if(!exp instanceof RegExp)  {
             throw new Error(`${exp} must be a regular expression`);
         }
-        if(ruleTypes.hasOwnProperty(type))  {
+        if(RuleTypes.hasOwnProperty(type))  {
             throw new Error(`${type} already exists as a rule type`);
         }
          if(typeof type !== 'string')  {
             throw new Error(`${type} must be a string.`);
         }
-        ruleTypes[type] = exp;
+        RuleTypes[type] = exp;
         return this;
 
     }
 
     validator(key, fn, required, priority) {
         // TO-DO: Check for correct parameters
-        rules[key] = { 
+        Rules[key] = { 
             fn: fn,
             priority: priority || 0,
-            handshake: true,
+            handler: true,
             required: required || false
         }
         return this;

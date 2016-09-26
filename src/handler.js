@@ -1,6 +1,6 @@
 import {pubSub} from "./utils";
 import FormField from './form-field';
-import {fieldMethods, rules, objType, fieldState} from "./config.js";
+import {fieldMethods, Rules, fieldState} from "./config.js";
 
 class fieldWrapper {
 
@@ -11,14 +11,14 @@ class fieldWrapper {
     }
 
     isType(type) {
-        return rules.type.fn.call({params: [type]},this.value);
+        return Rules.type.fn.call({params: [type]},this.value);
     }
 }
 
-class Handshake {
+class Handler {
 
     constructor() {
-        this._handshakes = {};
+        this._handlers = {};
         this.onInit();
     }
  
@@ -27,15 +27,15 @@ class Handshake {
     }
 
     subscribe() {
-        this.subRegister = pubSub.subscribe('handshake:register', this.register.bind(this));
-        this.subAddField = pubSub.subscribe('handshake:addField', this.addField.bind(this)); 
-        this.subExecute = pubSub.subscribe('handshake:execute', this.execute.bind(this)); 
-        this.subDestroy = pubSub.subscribe('handshake:destroy', this.destroy.bind(this)); 
+        this.subRegister = pubSub.subscribe('handler:register', this.register.bind(this));
+        this.subAddField = pubSub.subscribe('handler:addField', this.addField.bind(this)); 
+        this.subExecute = pubSub.subscribe('handler:execute', this.execute.bind(this)); 
+        this.subDestroy = pubSub.subscribe('handler:destroy', this.destroy.bind(this)); 
     }
 
     register(obj) {
-        if(!this._handshakes.hasOwnProperty(obj.key)) {
-            this._handshakes[obj.key] = {
+        if(!this._handlers.hasOwnProperty(obj.key)) {
+            this._handlers[obj.key] = {
                 fields: {},
                 key: obj.key
             }; 
@@ -44,17 +44,17 @@ class Handshake {
 
     addField(obj) {
         this.register(obj);
-        this._handshakes[obj.key].fields[obj.fieldName] =  new fieldWrapper(obj.uniqueId);
+        this._handlers[obj.key].fields[obj.fieldName] =  new fieldWrapper(obj.uniqueId);
     }
 
     setFieldReady(key, fieldName, value) {
-        let field = this._handshakes[key].fields[fieldName];
+        let field = this._handlers[key].fields[fieldName];
         field.value = value;
         field.ready = true;
     }
 
     checkFieldsReady(key) {
-        let fields = this._handshakes[key].fields;
+        let fields = this._handlers[key].fields;
         for(let field in fields)  {
             if(fields.hasOwnProperty(field)) {
                 if(!fields[field].ready) {
@@ -66,7 +66,7 @@ class Handshake {
     } 
 
     disableFields(key) {
-        let fields = this._handshakes[key].fields;
+        let fields = this._handlers[key].fields;
         for(let field in fields)  {
             if(fields.hasOwnProperty(field)) {
                pubSub.publish('field:disable', {
@@ -77,15 +77,15 @@ class Handshake {
     }
 
     execute(obj) {
-        let required = rules[obj.key].hasOwnProperty('required')  ? rules[obj.key].required : false;
+        let required = Rules[obj.key].hasOwnProperty('required')  ? Rules[obj.key].required : false;
         this.setFieldReady(obj.key, obj.fieldName, obj.fieldValue);
         if(this.checkFieldsReady(obj.key) || !required) {
             this.disableFields(obj.key);
             // Execute Function
-            rules[obj.key].fn(this._handshakes[obj.key].fields,
-                this.callback.bind(this._handshakes[obj.key], 'field:callbackSuccess'),  
-                this.callback.bind(this._handshakes[obj.key], 'field:callbackError'),
-                this.callback.bind(this._handshakes[obj.key], 'field:callbackIgnore'));
+            Rules[obj.key].fn(this._handlers[obj.key].fields,
+                this.callback.bind(this._handlers[obj.key], 'field:callbackSuccess'),  
+                this.callback.bind(this._handlers[obj.key], 'field:callbackError'),
+                this.callback.bind(this._handlers[obj.key], 'field:callbackIgnore'));
         }
     }
 
@@ -101,8 +101,8 @@ class Handshake {
     }
 
     destroy() {
-        console.log('handshake is destroyed.');
-        this._handshakes = null;
+        console.log('handler is destroyed.');
+        this._handlers = null;
         this.subRegister.remove();
         this.subAddField.remove();
         this.subExecute.remove();
@@ -110,4 +110,4 @@ class Handshake {
     }
 }
 
-module.exports = Handshake;
+module.exports = Handler;

@@ -1,5 +1,5 @@
 import {nl2arr, pubSub} from "./utils.js";
-import {attributes, fieldQuery} from "./config.js";
+import {Attributes, FieldQuery} from "./config.js";
 
 class Message {
 
@@ -12,7 +12,7 @@ class Message {
     }
 
     onInit() {
-        let attrs = this._elem.getAttribute(attributes.messages).split('.');
+        let attrs = this._elem.getAttribute(Attributes.messages).split('.');
         this.formName = attrs[0];
         this.fieldName = attrs[1];
         this.registerBlockMessages();
@@ -55,9 +55,9 @@ class Message {
     registerBlockMessages() {
         let self = this,
             key = null;
-        nl2arr(this._elem.querySelectorAll(fieldQuery.message))
+        nl2arr(this._elem.querySelectorAll(FieldQuery.message))
                 .forEach((msgElem)  => {
-                    key = msgElem.getAttribute(attributes.message);
+                    key = msgElem.getAttribute(Attributes.message);
                     if (key) {
                         self._messages[key] = msgElem; 
                     }  
