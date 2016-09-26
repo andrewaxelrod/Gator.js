@@ -1,6 +1,6 @@
 import {pubSub} from "./utils";
 import FormField from './form-field';
-import {fieldMethods, Rules, fieldState} from "./config.js";
+import {Rules} from "./config.js";
 
 class fieldWrapper {
 

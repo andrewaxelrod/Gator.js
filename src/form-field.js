@@ -1,4 +1,4 @@
-import {objType, fieldState, ValidatorState, Attributes, Events, FieldQuery} from "./config.js";
+import {ValidatorState, Attributes, Events, FieldQuery} from "./config.js";
 import {getUniqueId, nl2arr, pubSub, convertCamelCase} from "./utils.js";
 import Validator from "./validator"
 
