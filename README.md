@@ -116,8 +116,10 @@ gator.validator('validatorName', validatorFunc, [require, priority])
 ```
 
 Optional Arguments: 
-require - All fields binded with this custom validator must have it's primitive validators executed, such as require, before the custom validator is called.
-priority - Change the priority default value of 0.
+
+`require` - All fields binded with this custom validator must have it's primitive validators executed, such as require, before the custom validator is called.
+
+`priority` - Change the priority default value of 0.
 
 ```html
 <form name="loginForm"  action='....' method="POST">
@@ -147,7 +149,7 @@ priority - Change the priority default value of 0.
 ```js
 function customLogin(fields, success, error) {
 
-    // fields is an object with all the binded fields from this custom valdiator. 
+    // 'fields' is an object with all the binded fields from this custom valdiator. 
     // You could access the field's value or primitive function types.
     if(!fields.email.value || !fields.password.isType('strongPassword') {
         return error();
