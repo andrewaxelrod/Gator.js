@@ -168,7 +168,7 @@ function customLogin(fields, success, error) {
 }
 
 var gator = new Gator({listener: 'change'})
-    .validator('customLogin', customUsernameExists, true) // The last param: The email and password must validate require, minlength, and maxlength before this funciton is called.
+    .validator('customLogin', customUsernameExists, true) // The last param: The email and password must validate require, minlength, and maxlength before this function is called.
     .init('simpleRegistration');
 ```
 

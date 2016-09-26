@@ -5,14 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
  
-    <title>Gator.js</title>
+    <title>Gator.js - Simple Registration</title>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
     <link rel="stylesheet" href="css/app.css" rel="stylesheet" type="text/css">
   </head>
   <body>
-    <div data-ng-app="app"> 
+    <div> 
         <nav class="navbar navbar-inverse navbar-fixed-top">
           <div class="container">
             <div class="navbar-header">
@@ -22,75 +22,107 @@
       </nav>
       <div class="container">
         <div class="starter-template">
-
-
-
-          <div style="width:300px">
-              <h1>Test 1</h1>
-              <form name="customerForm" id="customerForm" gt-validate>
-
-
-
-                <div class="form-group">
-                  <label for="firstName">First Name:</label>
-                    <input type="text"
-                        id="firstName" 
-                        name="firstName"
-                        class="form-control" 
-                        placeholder="Enter your first name"
-                        gt-minlength="5"
-                        gt-type="email"
-                        gt-handshake="uniqueName"
-                        required />
-                  <div gt-messages="customerForm.firstName" style="color:red" role="alert">
-                    <div gt-message="required">This field is required</div>
-                    <div gt-message="minlength">Your field is too short</div>
-                    <div gt-message="type">This needs to be a valid email.</div>
-                  </div>
-                </div>
-
-
-                <div class="form-group">
-                  <label for="lastName">Name:</label>
-                    <input type="text"
-                        id="lastName" 
-                        name="lastName"
-                        class="form-control" 
-                        placeholder="Enter your lastname"
-                        gt-minlength="5"
-                        gt-type="email"
-                        gt-handshake="uniqueName"
-                        required />
-                  <div gt-messages="customerForm.lastName" style="color:red" role="alert">
-                    <div gt-message="required">This field is required</div>
-                    <div gt-message="minlength">Your field is too short</div>
-                    <div gt-message="type">This needs to be a valid email.</div>
-                  </div>
-                </div>
-
-                <div gt-messages="customerForm.uniqeName" style="color:red" role="alert">
-                    <div gt-message="bothNamesRequired">First and Last Name are Required</div>
-                    <div gt-message="anotherRule">Another Rule</div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Submit</button>
-              </form>  
-            </div>
- 
-        </div>
-      </div>
-    </div>
+            <ul class="nav nav-pills">
+                <li role="presentation" class="active"><a href="#">Registration Demo</a></li>
+                <li role="presentation"><a href="demo2.html">Login Demo</a></li>
+            </ul>
+            <br/>
+            <form name="simpleRegistration" class="form-horizontal" action='' method="POST">
+                <fieldset>
+                    <div id="legend">
+                    <legend class="">Register</legend>
+                    </div>
+                    <div class="control-group">
+                    <!-- Username -->
+                    <label class="control-label"  for="username">Username</label>
+                    <div class="controls">
+                        <input type="text" name="username" class="form-control" 
+                                gt-minlength="5"
+                                gt-maxlength="10"
+                                gt-type='customUsername'
+                                gt-custom-username-exists=":change"
+                                required>
+                        <div gt-messages="simpleRegistration.username" style="color:red" role="alert">
+                            <div gt-message="required">Username is required.</div>
+                            <div gt-message="minlength">Username is too short.</div>
+                            <div gt-message="maxlength">Username is too long.</div>
+                            <div gt-message="type">Username can contain any letters or numbers, without spaces.</div>
+                            <div gt-message="customUsernameExists">Username is already taken. Please try another.</div>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="control-group">
+                    <!-- E-mail -->
+                    <label class="control-label" for="email">E-mail</label>
+                    <div class="controls">
+                        <input type="text" name="email" class="form-control" 
+                            gt-type="email"
+                            required>
+                        <div gt-messages="simpleRegistration.email" style="color:red" role="alert">
+                            <div gt-message="required">Email is required.</div>
+                            <div gt-message="type">Must be a valid Email.</div>
+                            <div gt-message="customEmailExists">Email already taken. Please try another.</div>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="control-group">
+                    <!-- Password-->
+                    <label class="control-label" for="password">Password</label>
+                    <div class="controls">
+                        <input type="password" name="password" class="form-control" 
+                            gt-minlength="8"
+                            gt-maxlength="15" 
+                            gt-same
+                            required>
+                        <div gt-messages="simpleRegistration.password" style="color:red" role="alert">
+                            <div gt-message="required">Password is required.</div>
+                            <div gt-message="minlength">Password is too short.</div>
+                            <div gt-message="maxlength">Password is too long.</div>
+                            <div gt-message="type">Need a stronger Password.</div>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="control-group">
+                    <!-- Password -->
+                    <label class="control-label" for="password_confirm">Password (Confirm)</label>
+                    <div class="controls">
+                        <input type="password" name="password_confirm" class="form-control" 
+                            gt-same
+                            required>
+                        <div gt-messages="simpleRegistration.password_confirm" style="color:red" role="alert">
+                            <div gt-message="required">Password is required.</div>
+                            <div gt-message="same">Passwords need to match.</div>
+                        </div>
+                    </div>
+                    </div>
+                    <br/>
+                    <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
+                    <strong>For username, enter a username that is already taken: andrew11</strong>
+            </form>              
+        </div>  
+     </div>    
    <script src="../dist/gator.js"></script>
     <script>
-         var gator = new Gator();
-      /*   gator
-          .addHandshake('uniqueName', function(fields) {
-             if( fields.firstName.length && fields.lastName.length ) {
-                return 'bothNamesRequired';
-             } else {
+       
+        (function() {
+ 
+            function customUsernameExists(fields, success, error) {
+                window.setTimeout(function() {
+                    if(fields.username.value === "andrew11") {
+                        error();
+                    } else {
+                        success();
+                    }
+                }, 2000);
+            }
 
-             }
-          }) */
+           var gator = new Gator({listener: 'keyup'})
+                .addRuleType('customUsername', /^[a-zA-Z0-9]+$/)
+                .validator('customUsernameExists', customUsernameExists, true)
+                .init('simpleRegistration');
+
+        }());
+        
     </script>
   </body>
 </html>
