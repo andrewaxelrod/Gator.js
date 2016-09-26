@@ -12,6 +12,12 @@ https://andrewaxelrod.github.io/Gator.js/demo.html
 
 ## Setup
 
+You can get it on bower.
+
+```
+bower install gator --save
+```
+
 ```html
 <script src="dist/gator.min.js"></script>
 ```
