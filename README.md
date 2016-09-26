@@ -156,7 +156,7 @@ function customLogin(fields, success, error) {
     } 
 
     // Validate email and password on the server using a promise service.
-     UserService.checkUserName(fields.username.value, fields.password.value).then(
+     UserService.validateLogin(fields.email.value, fields.password.value).then(
         function(data) {
             /// If the email and password validate on the server.  
             if(data.valid) {
@@ -167,7 +167,7 @@ function customLogin(fields, success, error) {
         });
 }
 
-var gator = new Gator({listener: 'change'})
+var gator = new Gator()
     .validator('customLogin', customLogin, true) // The last param: The email and password must validate require, minlength, and maxlength before this function is called.
     .init('simpleRegistration');
 ```
@@ -175,6 +175,27 @@ var gator = new Gator({listener: 'change'})
 ### Triggers
 
 This feature is coming soon. Each time a field validates with a success state or an error, it will trigger an event that could be used for DOM manipulation or to call ajax methods.
+
+
+## Build
+
+Build.
+```
+npm start build
+```
+
+Production Build.
+```
+npm start build-min
+```
+
+Run Tests.
+```
+npm test
+```
+
+## Testing
+The testing is coming soon and will be built with karma/jasmine.
 
 ## Browser Support
 
