@@ -97,7 +97,7 @@ In this example, we add the validator, gt-same, to two fields. This validator wi
 In this example, we add the custom type, username.
 
 ```html
- <input type="text" name="confirm_password" 
+ <input type="text" name="username" 
     gt-type="username"
     required>
 ```
@@ -111,9 +111,68 @@ In this example, we add the custom type, username.
 
 ### Custom Validators with Callbacks 
 
+```js
+gator.validator('validatorName', validatorFunc, [require, priority]) 
+```
 
+Optional Arguments: 
+require - All fields binded with this custom validator must have it's primitive validators executed, such as require, before the custom validator is called.
+priority - Change the priority default value of 0.
 
+```html
+<form name="loginForm"  action='....' method="POST">
+    <div gt-messages="loginForm.email" role="alert">
+        <div gt-message="customLogin">Wrong Email and Password, Please try again.</div>
+    </div>
+    <label for="email">Email</label>
+    <input type="text" name="email" 
+        gt-type="email"
+        gt-custom-login
+        required>
+    <div gt-messages="loginForm.email" role="alert">
+        <div gt-message="required">Password is required.</div>
+    </div>
+    <label for="password">Email</label>
+    <input type="text" name="password" 
+            gt-minlength="8"
+            gt-maxlength="15"
+            gt-custom-login
+            required>
+    <div gt-messages="loginForm.password" role="alert">
+        <div gt-message="required">Password is required.</div>
+    </div>
+</form>
+```
 
+```js
+function customLogin(fields, success, error) {
+
+    // fields is an object with all the binded fields from this custom valdiator. 
+    // You could access the field's value or primitive function types.
+    if(!fields.email.value || !fields.password.isType('strongPassword') {
+        return error();
+    } 
+
+    // Validate email and password on the server using a promise service.
+     UserService.checkUserName(fields.username.value, fields.password.value).then(
+        function(data) {
+            /// If the email and password validate on the server.  
+            if(data.valid) {
+                success();
+            } else {
+                error();
+            }
+        });
+}
+
+var gator = new Gator({listener: 'change'})
+    .validator('customLogin', customUsernameExists, true) // The last param: The email and password must validate require, minlength, and maxlength before this funciton is called.
+    .init('simpleRegistration');
+```
+
+### Triggers
+
+This feature is coming soon. Each time a field validates with a success state or an error, it will trigger an event that could be used for DOM manipulation or to call ajax methods.
 
 ## Browser Support
 
