@@ -1,71 +1,97 @@
-import {Rules, ValidatorState, Events} from './config';
-import {pubSub} from './utils'; 
+const RuleTypes = {
+    email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
+    number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
+    integer: /^-?\d+$/,
+    digits: /\d+$/,
+    alphanum: /^\w+$/i,
+    date: /^(\d{4})-(\d{2})-(\d{2})$/,
+    url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
+};
+
+const Rules = { 
+     required: {
+        fn: function(value) {
+          return (/\S/.test(value));
+        },
+        priority: 1024,
+        handler: false
+      }, 
+      type: {
+        fn: function(value) {
+          var regex = RuleTypes[this.params[0]];
+          return regex.test(value);
+        },
+        priority: 256,
+        handler: false
+      }, 
+      minlength: {
+        fn: function(value) {
+           return value.length >= this.params[0]
+        },
+        priority: 512,
+        handler: false
+      },
+      maxlength: {
+        fn: function(value) {
+           return value.length <= this.params[0]
+        },
+        priority: 512,
+        handler: false
+      },
+      group: {
+        fn: function(fields, success, error) {
+          for(let field in fields) {
+            if(!fields[field].value) {
+              error();
+              return;
+            }
+          }
+          success();
+        },
+        priority: 0,
+        handler: true,
+        required: false
+      },
+      same: {
+        fn: function(fields, success, error) {
+          let ref = fields[Object.keys(fields)[0]];
+          for(let field in fields) {
+             if(fields[field].value !== ref.value) {
+              error();
+              return; 
+             }
+          }
+          success(); 
+        },
+        priority: 0,
+        handler: true,
+        required: true // All fields must pass all initial validators up until the handler or won't be called.
+      }
+};
+ 
 
 class Validator { 
  
-    constructor(key, params, fieldName, fieldUniqueId) { 
-        this.key = key;
-        this.fieldName = fieldName;
-        this.fieldUniqueId = fieldUniqueId;
-        this.state = ValidatorState.INIT;    
+    constructor() { } 
 
-        let p = params.match(/^(.*?)(?:\:(\w*)){0,1}$/);
-        this.params = p[1] ? p[1].split(',') : null;
-        this.event = p[2] || Events.KEYUP;
-        this.onInit(); 
-    } 
 
-    onInit() {
-        this.setPriority();
-        this.setHandler();
-        this.subscribe();
-    }
 
-    subscribe() {
-        this.subCBDestroy = pubSub.subscribe('validator:destroy', this.destroy.bind(this));        
-    }
-
-    setPriority() {
-        if (!Rules.hasOwnProperty(this.key)) {
-            throw new Error(`Invalid directive, "gt-${this.key}"`);
+    prioritize(validators) {
+        for(let validator of validators) {
+            if(isRule(validator.key)) {
+                validator.priority = Rules[validator.key].priority; 
+            }
         }
-        this.priority = Rules[this.key].priority;
-    } 
- 
-    setHandler() {
-        let self = this;
-        if(Rules[this.key].handler) {
-            pubSub.publish('handler:addField', { 
-                key: self.key,
-                fieldName: self.fieldName,
-                uniqueId: self.fieldUniqueId
-            });
-        }
+        validators.sort((a, b) =>  b.priority - a.priority);
     }
 
-	validate(value) {
-        let self = this,
-            rule = Rules[this.key];
-        if(rule.handler === true) {
-            this.state = ValidatorState.HANDLER;
-        } else {
-            this.state = rule.fn.call(this, value) ? ValidatorState.SUCCESS : ValidatorState.ERROR;
-        }   
-    } 
-
-    isHandler() {
-        return this.state === ValidatorState.HANDLER;
+    isRule(key) {
+        return Rules.hasOwnProperty(key);
     }
 
-    isError() {
-        return this.state === ValidatorState.ERROR;
-    }
-
-    destroy() {
-        console.log('valdidator is destroyed!')
-        this.params.length = 0;
-        this.subCBDestroy.remove();
+    isRuleType(key) {
+        return RuleTypes.hasOwnProperty(key);
     }
 }
 
-module.exports = Validator;
+module.exports = new Validator();
