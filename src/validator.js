@@ -1,97 +1,113 @@
-const RuleTypes = {
-    email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
-    number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
-    integer: /^-?\d+$/,
-    digits: /\d+$/,
-    alphanum: /^\w+$/i,
-    date: /^(\d{4})-(\d{2})-(\d{2})$/,
-    url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
-};
-
-const Rules = { 
-     required: {
-        fn: function(value) {
-          return (/\S/.test(value));
-        },
-        priority: 1024,
-        handler: false
-      }, 
-      type: {
-        fn: function(value) {
-          var regex = RuleTypes[this.params[0]];
-          return regex.test(value);
-        },
-        priority: 256,
-        handler: false
-      }, 
-      minlength: {
-        fn: function(value) {
-           return value.length >= this.params[0]
-        },
-        priority: 512,
-        handler: false
-      },
-      maxlength: {
-        fn: function(value) {
-           return value.length <= this.params[0]
-        },
-        priority: 512,
-        handler: false
-      },
-      group: {
-        fn: function(fields, success, error) {
-          for(let field in fields) {
-            if(!fields[field].value) {
-              error();
-              return;
-            }
-          }
-          success();
-        },
-        priority: 0,
-        handler: true,
-        required: false
-      },
-      same: {
-        fn: function(fields, success, error) {
-          let ref = fields[Object.keys(fields)[0]];
-          for(let field in fields) {
-             if(fields[field].value !== ref.value) {
-              error();
-              return; 
-             }
-          }
-          success(); 
-        },
-        priority: 0,
-        handler: true,
-        required: true // All fields must pass all initial validators up until the handler or won't be called.
-      }
-};
- 
+import {STATE, RULES, RULE_TYPES} from "./config";
+import * as util from "./utils";
 
 class Validator { 
  
-    constructor() { } 
+    constructor() { 
+      this.groups = {};
+      this.groupReadyFlag = true;
+      this.mediator = null;
+    } 
 
+    validate(validators, fieldKey, fieldValue) {
 
+      let result = this.validateLoop(validators, fieldKey, fieldValue),
+          group = null;
 
-    prioritize(validators) {
+      if(result.group) {
+        group = this.groups[result.group];
+        for(let groupFieldKey in group) {
+          if (group.hasOwnProperty(groupFieldKey)) {
+            this.mediator.validateResponse(result.state, groupFieldKey, result.validatorKey);
+          }
+        }
+      } else {
+         this.mediator.validateResponse(result.state, fieldKey, result.validatorKey);
+      }
+    }
+
+    validateLoop(validators, fieldKey, fieldValue) {
+
+      let result = {};
+
+      for(let validator of validators) {
+
+        result.state = STATE.WAIT;
+        result.validatorKey = validator.key;
+        result.group = null;
+
+        // Reset the value of this field in the groups Cache.
+        if(this.groups.hasOwnProperty(validator.key)) {
+           this.groups[validator.key][fieldKey] = null;
+        }
+
+        // Validate ASYNC Condition  
+        if(validator.async) {
+
+        // Validate Group Condition   
+        } else if(validator.group) {
+          // Regardless of the validation result, set the value of the group field.
+          this.groups[validator.key][fieldKey] = fieldValue;
+
+          // If all fields should be set before validating group fields.
+          if(this.groupReadyFlag && !this.checkGroupReady(validator.key)) {
+            result.state = STATE.SKIP;
+            break;
+          }
+
+          result.group = validator.key;
+          if (!RULES[validator.key].fn.call(validator, this.groups[validator.key])) {
+            result.state = STATE.ERROR;
+            break;
+          } else {
+            result.state = STATE.SUCCESS;
+          }
+
+        // Validate Single Condition    
+        } else {
+          if(!RULES[validator.key].fn.call(validator, fieldValue)) {
+            result.state = STATE.ERROR;
+            break;
+          } else {
+            result.state = STATE.SUCCESS;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    checkGroupReady(key) {
+      let group = this.groups[key];
+      for(let groupFieldKey in group)  {
+        if (group.hasOwnProperty(groupFieldKey)) {
+          if(group[groupFieldKey] === null) {
+            return false;
+          }
+        }
+      }
+      return true;
+    } 
+
+    initValidators(validators, fieldKey) {
         for(let validator of validators) {
-            if(isRule(validator.key)) {
-                validator.priority = Rules[validator.key].priority; 
+          if(!RULES.hasOwnProperty(validator.key)) {
+            util.log.error(`${validator.key} is an Invalid validator`);
+          }
+          // Set Priority
+          validator.priority = RULES[validator.key].priority || 0; 
+          validator.group = RULES[validator.key].group || false; 
+          validator.async = RULES[validator.key].async || false; 
+          if(validator.group) {
+            if(!this.groups.hasOwnProperty(validator.key)) {
+              this.groups[validator.key] = {};
             }
+            this.groups[validator.key][fieldKey] = null;
+          }
         }
         validators.sort((a, b) =>  b.priority - a.priority);
     }
-
-    isRule(key) {
-        return Rules.hasOwnProperty(key);
-    }
-
-    isRuleType(key) {
-        return RuleTypes.hasOwnProperty(key);
-    }
+ 
 }
 
 module.exports = new Validator();

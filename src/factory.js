@@ -1,5 +1,5 @@
 import {Type} from "./config";
-import {getUniqueId} from './utils';
+import * as util from './utils';
 import Form from './form';
 import Field from './field';
 import Message from './message';
@@ -10,15 +10,16 @@ class Factory {
     constructor() {}
 
     create(type, elem, parent) {
-        let key =  getUniqueId(),
-            name = elem && elem.hasAttribute('name') ? elem.name : null,
-            parentName = parent && parent.hasAttribute('name') ? parent.name : null;
+        let key = null;
         switch(type) {
             case Type.FORM:
-                return new Form(key, elem, name);
+                key = `${util.getName(elem)}`;
+                return new Form(key, elem);
             case Type.FIELD:
-                return new Field(key, elem, name, parentName);
+                key = `${util.getName(parent)}:${util.getName(elem)}`;
+                return new Field(key, elem, parent);
             case Type.MESSAGE:
+                key = util.getAttribute(elem, 'messages');
                 return new Message(key, elem);
         }
     }

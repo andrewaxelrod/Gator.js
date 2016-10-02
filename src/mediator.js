@@ -1,4 +1,4 @@
-import {Type} from "./config";
+import {Type, STATE} from "./config";
 
 class Mediator { 
  
@@ -12,7 +12,6 @@ class Mediator {
     register(obj) {
         switch(obj.type) {
             case Type.FORM:
-                console.log(obj);
                 this._forms[obj.key] = obj;
                 this._forms[obj.key].mediator = this;
                 break;
@@ -24,34 +23,33 @@ class Mediator {
             case Type.MESSAGE:
                 this._messages[obj.key] = obj;
                 this._messages[obj.key].mediator = this;
+                this._messages[obj.key].init();
                 break;
         }
     }
 
     registerValidator(obj) {
-        this._validator = obj;
+        this._validator = obj; 
+        this._validator.mediator = this;
     }
 
     validate(field) {
+       this._validator.validate(field.validators, field.key, field.value);
+    }
+
+    validateResponse(state, fieldKey, validatorKey) {
+        this._messages[fieldKey].clear();
+        if(state === STATE.ERROR) {
+            this._messages[fieldKey].showMessage(validatorKey);
+        }
+    }
+
+    // Pass in field.validators instead of field
+    initValidators(validators, key) {
+        this._validator.initValidators(validators, key);
        
     }
 
-    prioritizeValidators(field) {
-        this._validator.prioritize(field.validators);
-    }
-
-    onError(field) {
-       if (field.state === State.ASYNC) {
-
-       } else if (field.state === State.ERROR) {
-
-       } else if (field.state === State.SUCCESS) { 
-           
-       }
-    }
-
-   
- 
     destroy() {
  
     }

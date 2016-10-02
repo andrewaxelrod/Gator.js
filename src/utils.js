@@ -3,7 +3,6 @@ export function nl2arr(nodeList) {
     return Array.prototype.slice.call(nodeList);
 };
 
-
 // Unique ID
 // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
 export function getUniqueId() {
@@ -23,8 +22,24 @@ export function convertCamelCase(str) {
     });
 };
 
-function isElement(obj) {
+export function isElement(obj) { 
     return (obj[0] || obj).nodeType
 }
 
+export function getName(elem) {
+    return elem && elem.hasAttribute('name') ? elem.name : null;
+}
+
+export function getAttribute(elem, attribute) {
+    return elem && elem.hasAttribute('gt-' + attribute) ? elem.getAttribute('gt-' + attribute) : null;
+} 
+
+export const log = { 
+    error(msg) {
+        throw new Error(msg);
+    },
+    warn(msg) {
+        throw new Warning(msg);
+    }
+}
  

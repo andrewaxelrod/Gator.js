@@ -8,7 +8,6 @@ class Form {
         this.elem = elem || null;
         this.name = elem.name || null;
         this.mediator = null;
-        console.log(this);
     }
  
     onInit() {

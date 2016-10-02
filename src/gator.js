@@ -12,6 +12,8 @@ class Main {
 
         mediator.registerValidator(validator);
 
+        window.m = mediator;
+
         // Register Form
         let query = formName ? FieldQuery.form.replace(/\{\{name\}\}/, formName) : 'form';
         nl2arr(document.querySelectorAll(query))
@@ -64,6 +66,8 @@ class Gator extends Main {
     init(formName) {
         this._init(formName);
     }
+
+
 
 
 
