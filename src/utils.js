@@ -3,18 +3,6 @@ export function nl2arr(nodeList) {
     return Array.prototype.slice.call(nodeList);
 };
 
-// Unique ID
-// http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-export function getUniqueId() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
-};
-
 export function convertCamelCase(str) {
   return str.replace(/-([a-z])/g, 
     (s) => { 
@@ -42,4 +30,17 @@ export const log = {
         throw new Warning(msg);
     }
 }
- 
+
+/**
+ * Overwrites obj1's values with obj2's and adds obj2's if non existent in obj1
+ * @param {Object} obj1
+ * @param {Object} obj2
+ */
+export function extend(obj1,obj2){
+    for (let attrname in obj2) { 
+        if(obj2.hasOwnProperty(attrname)) {
+            obj1[attrname] = obj2[attrname];    
+        }
+    }
+    return obj1; 
+}

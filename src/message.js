@@ -1,14 +1,21 @@
-import {Type, FieldQuery} from './config';
+import {NAMESPACE, Type} from './config';
 import * as util from './utils';
+
+const MESSAGE_QUERY = `[${NAMESPACE}-message]`,
+      ATTR_MESSAGE = 'message',
+      StyleDisplay = {
+          BLOCK: 'block',
+          NONE: 'none'
+      };
 
 class Message {
 
     constructor(key, elem) {
-       this.key = key;
-       this.type = Type.MESSAGE;
-       this.elem = elem || null;
-       this.messages = {};
-       this.mediator = null;
+        this.type = Type.MESSAGE;
+        this.key = key;
+        this.elem = elem || null;
+        this.messages = {};
+        this.mediator = null;
     }
 
     init() {
@@ -17,15 +24,16 @@ class Message {
     }
 
     showMessage(key) {
-        console.log(this.elem);
         this.clear();
-        this.messages[key].style.display = 'block';
+        if(this.messages.hasOwnProperty(key)) {
+            this.messages[key].style.display = StyleDisplay.BLOCK;
+        }
     }
 
     clear() {
         for(let key in this.messages ) {
             if (this.messages.hasOwnProperty(key)) {
-                this.messages[key].style.display = 'none';
+                this.messages[key].style.display = StyleDisplay.NONE;
             }
         }
     }
@@ -33,9 +41,11 @@ class Message {
      registerBlockMessages() {
         let self = this,
             key = null;
-        util.nl2arr(this.elem.querySelectorAll(FieldQuery.message))
+
+        util.nl2arr(self.elem.querySelectorAll(MESSAGE_QUERY))
                 .forEach((elem)  => {
-                    key = util.getAttribute(elem, 'message');
+                    key = util.getAttribute(elem, ATTR_MESSAGE);
+
                     if (key) {
                         self.messages[key] = elem; 
                     }  

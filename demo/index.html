@@ -39,15 +39,14 @@
                         <input type="text" name="username" class="form-control" 
                                 gt-minlength="5"
                                 gt-maxlength="10"
-                                gt-type='customUsername'
-                                gt-custom-username-exists=":change"
+                                gt-test=":change"
                                 required>
-                        <div gt-messages="simpleRegistration.username" style="color:red" role="alert">
+                        <div gt-messages="simpleRegistration:username" style="color:red" role="alert">
                             <div gt-message="required">Username is required.</div>
                             <div gt-message="minlength">Username is too short.</div>
                             <div gt-message="maxlength">Username is too long.</div>
                             <div gt-message="type">Username can contain any letters or numbers, without spaces.</div>
-                            <div gt-message="customUsernameExists">Username is already taken. Please try another.</div>
+                            <div gt-message="test">Test Error.</div>
                         </div>
                     </div>
                     </div>
@@ -58,10 +57,9 @@
                         <input type="text" name="email" class="form-control" 
                             gt-type="email"
                             required>
-                        <div gt-messages="simpleRegistration.email" style="color:red" role="alert">
+                        <div gt-messages="simpleRegistration:email" style="color:red" role="alert">
                             <div gt-message="required">Email is required.</div>
                             <div gt-message="type">Must be a valid Email.</div>
-                            <div gt-message="customEmailExists">Email already taken. Please try another.</div>
                         </div>
                     </div>
                     </div>
@@ -74,11 +72,11 @@
                             gt-maxlength="15" 
                             gt-same
                             required>
-                        <div gt-messages="simpleRegistration.password" style="color:red" role="alert">
+                        <div gt-messages="simpleRegistration:password" style="color:red" role="alert">
                             <div gt-message="required">Password is required.</div>
                             <div gt-message="minlength">Password is too short.</div>
                             <div gt-message="maxlength">Password is too long.</div>
-                            <div gt-message="type">Need a stronger Password.</div>
+                            <div gt-message="same">Passwords Must Match.</div>
                         </div>
                     </div>
                     </div>
@@ -89,15 +87,14 @@
                         <input type="password" name="password_confirm" class="form-control" 
                             gt-same
                             required>
-                        <div gt-messages="simpleRegistration.password_confirm" style="color:red" role="alert">
+                        <div gt-messages="simpleRegistration:password_confirm" style="color:red" role="alert">
                             <div gt-message="required">Password is required.</div>
                             <div gt-message="same">Passwords need to match.</div>
                         </div>
                     </div>
                     </div>
                     <br/>
-                    <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
-                    <strong>For username, enter a username that is already taken: andrew11</strong>
+                    <button type="submit" class="btn btn-primary">Submit</button>
             </form>              
         </div>  
      </div>    
@@ -106,7 +103,7 @@
        
         (function() {
  
-            function customUsernameExists(fields, success, error) {
+         /*   function customUsernameExists(fields, success, error) {
                 window.setTimeout(function() {
                     if(fields.username.value === "andrew11") {
                         error();
@@ -119,8 +116,11 @@
            var gator = new Gator({listener: 'keyup'})
                 .addRuleType('customUsername', /^[a-zA-Z0-9]+$/)
                 .validator('customUsernameExists', customUsernameExists, true)
-                .init('simpleRegistration');
+                .init('simpleRegistration'); */
 
+ var gator = new Gator().init();
+
+ 
         }());
         
     </script>

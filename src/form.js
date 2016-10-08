@@ -10,7 +10,7 @@ class Form {
         this.mediator = null;
     }
  
-    onInit() {
+    init() {
      
     }
    

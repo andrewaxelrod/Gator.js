@@ -1,46 +1,34 @@
 
-export const PREFIX = 'gt';
+/* Global Constants */
 
+export const NAMESPACE = 'gt';
+export const NAMESPACE_PREFIX = `${NAMESPACE}-`;
 export const PRIORITY_DEFAULT = 30;
 
 export const Type = {
-    FORM: 0,
-    FIELD: 1,
-    MESSAGE: 2,
-    VALIDATOR: 4,
+    FORM: 'FORM',
+    FIELD: 'FIELD',
+    MESSAGE: 'MESSAGE',
+    VALIDATOR: 'VALIDATOR',
 };
 
-export const STATE = {
+export const State = {
     INIT: 'INIT',
-    WAIT: 'WAIT',
+    VALIDATING: 'VALIDATING',
+    GROUP_NOT_READY: 'GROUP_NOT_READY',
+    ASYNC: 'ASYNC',
     SKIP: 'SKIP',
     SUCCESS: 'SUCCESS',
     ERROR: 'ERROR' 
 };
 
-export const Events = {
+export const Event = {
     KEYUP: 'keyup',
     CHANGE: 'change' 
 };
 
-export const  FieldQuery = {
-      prefix: `^${PREFIX}`,
-      input: 'input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])',
-      select: ',select[required]:not(:disabled):not([readonly])',
-      textarea: ',textarea[required]:not(:disabled):not([readonly])',
-      form: `form[name="{{name}}"]`,
-      messages: `[${PREFIX}-messages]`,
-      message: `[${PREFIX}-message]`
-};
 
-export const Attributes = {
-    prefix: `${PREFIX}-`,
-    messages: `${PREFIX}-messages`,
-    message: `${PREFIX}-message`
-};
-
-
-export const RULE_TYPES = {
+export const RuleTypes = {
     email: /^[a-z0-9!#$%&'*+\/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i,
     number: /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/,
     integer: /^-?\d+$/,
@@ -50,7 +38,7 @@ export const RULE_TYPES = {
     url: /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/
 };
 
-export const RULES = { 
+export const Rules = { 
      required: {
         fn: function(value) {
           return (/\S/.test(value));
@@ -59,7 +47,7 @@ export const RULES = {
       }, 
       type: {
         fn: function(value) {
-          let regex = RULE_TYPES[this.params[0]];
+          let regex = RuleTypes[this.params[0]];
           return regex.test(value);
         },
         priority: 256
@@ -88,6 +76,16 @@ export const RULES = {
         },
         priority: 0,
         group: true
+      },
+      test: {
+        fn: (fields, success, error) => {
+          window.setTimeout(() => {
+              console.log('async function called');
+                     error();
+                }, 2000);
+        },
+        priority: 0,
+        async: true
       }
 };
  

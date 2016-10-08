@@ -4,6 +4,8 @@ import Form from './form';
 import Field from './field';
 import Message from './message';
 
+const MESSAGES_ATTR = 'messages';
+
 // A Simple Abstract Factory
 class Factory {
 
@@ -19,7 +21,7 @@ class Factory {
                 key = `${util.getName(parent)}:${util.getName(elem)}`;
                 return new Field(key, elem, parent);
             case Type.MESSAGE:
-                key = util.getAttribute(elem, 'messages');
+                key = util.getAttribute(elem, MESSAGES_ATTR);
                 return new Message(key, elem);
         }
     }

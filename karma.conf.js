@@ -24,4 +24,7 @@ module.exports = function(karma) {
 
         browsers: ['PhantomJS']
     });
+
+    
 }
+ 

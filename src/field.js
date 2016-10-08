@@ -1,60 +1,65 @@
-import {Type, Events, FieldQuery, Attributes} from "./config";
-import {nl2arr} from "./utils";
+import {NAMESPACE_PREFIX, Type, Event, State} from "./config";
+import * as util from "./utils";
+
+const ATTR_REQUIRED = 'required',
+      ATTR_REGEX = /^(.*?)(?:\:(\w*)){0,1}$/;
 
 class Field { 
  
-    constructor(key, elem, form) { 
+    constructor(key, elem) { 
         this.type = Type.FIELD;
+        this.state = State.INIT;
         this.key = key || null;
         this.elem = elem || null;
         this.name = elem.name || null;
-        this.formName = form.name || null;
-        this.validators = [];
         this.value = null;
+        this.validators = [];
         this.mediator = null;
     } 
 
     init() {    
-        this.listeners();
+        this.registerListeners();
         this.getValidators();
         this.initValidators();
     }
 
-    listeners() {
-        this.elem.addEventListener(Events.KEYUP, this, false);
-        this.elem.addEventListener(Events.CHANGE, this, false);
+    registerListeners() {
+        this.elem.addEventListener(Event.KEYUP, this, false);
+        this.elem.addEventListener(Event.CHANGE, this, false);
     }
 
     handleEvent(event) {
         this.value = this.elem.value;
+
         switch(event.type) {
-            case Events.CHANGE:
-                this.validate();
+            case Event.CHANGE:
+                this.validate(Event.CHANGE);
                 break;
-            case Events.KEYUP:
-                this.validate();
+            case Event.KEYUP:
+                this.validate(Event.KEYUP);
                 break;
         }
     }
 
     getValidators() {
         let self = this,
-            regex = new RegExp(FieldQuery.prefix, 'i');
+            regex = new RegExp(NAMESPACE_PREFIX, 'i');
 
-        nl2arr(this.elem.attributes).forEach((attr) => {
+        util.nl2arr(this.elem.attributes).forEach((attr) => {
             let attribute = null;
+            
             if( attr.name && regex.test(attr.name) && attr.specified) {
-                attribute = attr.name.slice(Attributes.prefix.length);
-            } else if (attr.name === 'required' && attr.specified) {
-                attribute = 'required';
+                attribute = attr.name.slice(NAMESPACE_PREFIX.length);
+            } else if (attr.name === ATTR_REQUIRED && attr.specified) {
+                attribute = ATTR_REQUIRED;
             }  
 
             if(attribute) {
-              let p = attr.value.match(/^(.*?)(?:\:(\w*)){0,1}$/);
+              let p = attr.value.match(ATTR_REGEX);
                 this.validators.push({
                     key: attribute,
                     params: p[1] ? p[1].split(',') : null,
-                    event: p[2] || Events.KEYUP 
+                    event: p[2] || Event.KEYUP 
                 });
             } 
         });
@@ -64,12 +69,31 @@ class Field {
         this.mediator.initValidators(this.validators, this.key);
     }
 
-    validate() {
-        this.mediator.validate(this);
+    validate(event) {
+        this.mediator.validate(event, this.validators, this.key, this.value, this.state);
+    }
+
+    onSuccess() {
+        this.state = State.SUCCESS;
+        this.elem.disabled = false;
+    }
+
+    onError() {
+        this.state = State.ERROR;
+        this.elem.disabled = false;
+    }
+
+    onAsync() {
+        this.state = State.ASYNC;
+        this.elem.disabled = true;
     }
 
     destroy() {
-       
+        this.elem.removeEventListener(Event.KEYUP, this, false);
+        this.elem.removeEventListener(Event.CHANGE, this, false);
+        this.elem = null;
+        this.validators.length = 0;
+        this.mediator = null;
     }
 
 }
