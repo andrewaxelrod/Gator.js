@@ -4,6 +4,8 @@ import mediator from "./mediator";
 import factory from "./factory";
 import validator from "./validator"; 
 
+window.m = mediator;
+
 const FORMS_QUERY = `form`,
       FIELDS_QUERY = `input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])` +
                      `,select[required]:not(:disabled):not([readonly])` + 
@@ -18,6 +20,7 @@ class Main {
         this.registerValidator();
         this.registerForms(query); 
         this.registerMessages();
+        mediator.init();
     }
 
     registerValidator() {
@@ -41,12 +44,11 @@ class Main {
                             mediator.register(fieldObj);
                         });   
             });  
-
-            window.m = mediator;
     } 
 
     registerMessages(elem) {
         let message = null;
+        
         util.nl2arr(document.querySelectorAll(MESSAGES_QUERY))
             .forEach((msgElem)  => {
                 message = factory.create(Type.MESSAGE, msgElem);
@@ -54,6 +56,9 @@ class Main {
             });  
     }  
 }
+
+/* --------------------- API --------------------------*/ 
+/* This is in the works and still in beginning stages. */
 
 class Gator extends Main {
 
@@ -66,6 +71,8 @@ class Gator extends Main {
     }
    
 }
+
+window.gator = gator;
 
 module.exports = Gator;
  

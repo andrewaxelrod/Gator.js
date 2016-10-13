@@ -19,7 +19,7 @@ class Factory {
                 return new Form(key, elem);
             case Type.FIELD:
                 key = `${util.getName(parent)}:${util.getName(elem)}`;
-                return new Field(key, elem, parent);
+                return new Field(key, elem);
             case Type.MESSAGE:
                 key = util.getAttribute(elem, MESSAGES_ATTR);
                 return new Message(key, elem);

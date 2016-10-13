@@ -5,6 +5,12 @@ export const NAMESPACE = 'gt';
 export const NAMESPACE_PREFIX = `${NAMESPACE}-`;
 export const PRIORITY_DEFAULT = 30;
 
+export const Options  = {
+  NAMESPACE: NAMESPACE,
+  PRESTINE: true,
+  SUBMIT_DISABLED: true
+}
+
 export const Type = {
     FORM: 'FORM',
     FIELD: 'FIELD',

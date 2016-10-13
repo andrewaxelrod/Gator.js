@@ -12,8 +12,9 @@ class Validator {
       this.mediator = null;
     } 
 
+    // TO-DO: Need to add to unit test
     validate(event, validators, fieldKey, fieldValue, fieldState) {
-
+      console.log(event + ' ' +  validators + ' ' +  fieldKey + ' ' +   fieldValue + ' ' +   fieldState);
       if(!(validators instanceof Array) || typeof fieldKey !== 'string' || typeof fieldValue !== ('string' || 'number')) {
         throw new Error(`Validator.validatorLoop must have valid paramaters.`)
       }
@@ -86,13 +87,6 @@ class Validator {
         result.group = false;
 
         skip = (validator.event === Event.CHANGE && fieldState === State.ERROR) || event !== validator.event;  
-
-        if(!skip && (validator.async || validator.group)) {
-          if(validator.groupReady && !this.isFieldGroupReady(validator.key)) {
-            result.state = State.GROUP_NOT_READY;
-            break;
-          }
-        } 
 
         if(!skip && validator.async) { 
             result.async = true;
