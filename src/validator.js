@@ -14,7 +14,6 @@ class Validator {
 
     // TO-DO: Need to add to unit test
     validate(event, validators, fieldKey, fieldValue, fieldState) {
-      console.log(event + ' ' +  validators + ' ' +  fieldKey + ' ' +   fieldValue + ' ' +   fieldState);
       if(!(validators instanceof Array) || typeof fieldKey !== 'string' || typeof fieldValue !== ('string' || 'number')) {
         throw new Error(`Validator.validatorLoop must have valid paramaters.`)
       }
