@@ -73,8 +73,7 @@ class Validator {
       let result = {
         state: State.VALIDATING,
         fieldValue: fieldValue
-      },
-      skip = false;
+      };
   
       for(let validator of validators) {
 
@@ -86,26 +85,26 @@ class Validator {
         result.async = false;
         result.group = false;
 
-        skip = (validator.event === Event.CHANGE && fieldState === State.ERROR) || event !== validator.event;  
-
-        if(!skip && validator.async) { 
+        if( (validator.event === Event.CHANGE && fieldState === State.ERROR) || event !== validator.event )  {
+           result.state = State.SKIP;
+        } else if(validator.async) { 
             result.async = true;
             result.state = State.ASYNC;
             break;
-        } else if(!skip && validator.group) { 
+        } else if(validator.group) { 
           if(!Rules[validator.key].group) {
             throw new Error(`Validator.validatorLoop: ${validator.key} must be a group validator.`)
           }
 
           result.group = true;
 
-          if (!skip && !Rules[validator.key].fn.call(validator, this.fields[validator.key])) {
+          if (!Rules[validator.key].fn.call(validator, this.fields[validator.key])) {
             result.state = State.ERROR;
             break;
           } else {
             result.state = State.SUCCESS;
           }
-        } else if (!skip) { 
+        } else { 
            if(!Rules[validator.key].fn.call(validator, fieldValue)) {
             result.state = State.ERROR;
             break;
