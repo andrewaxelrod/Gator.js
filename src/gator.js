@@ -4,8 +4,6 @@ import mediator from "./mediator";
 import factory from "./factory";
 import validator from "./validator"; 
 
-window.m = mediator;
-
 const FORMS_QUERY = `form`,
       FIELDS_QUERY = `input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])` +
                      `,select[required]:not(:disabled):not([readonly])` + 
