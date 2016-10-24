@@ -61,7 +61,6 @@ class Main {
 /* This is in the works and still in beginning stages. */
 
 class Gator extends Main {
-
     constructor() {
         super();
     }
@@ -69,10 +68,7 @@ class Gator extends Main {
     init(query) {
         this._init(query);
     }
-   
 }
-
-window.gator = gator;
 
 module.exports = Gator;
  
