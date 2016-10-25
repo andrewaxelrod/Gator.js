@@ -109,9 +109,9 @@ In this example, we add the custom type, username.
 ```
 
 ```js
- var gator = new Gator({listener: 'change'})
+ new Gator({listener: 'change'})
     .addRuleType('username', /^[a-zA-Z0-9]+$/)
-    .init('simpleRegistration');
+    .init();
 
 ```
 
@@ -155,14 +155,8 @@ Optional Arguments:
 ```js
 function customLogin(fields, success, error) {
 
-    // 'fields' is an object with all the binded fields from this custom valdiator. 
-    // You could access the field's value or primitive function types.
-    if(!fields.email.value || !fields.password.isType('strongPassword') {
-        return error();
-    } 
-
     // Validate email and password on the server using a promise service.
-     UserService.validateLogin(fields.email.value, fields.password.value).then(
+     UserService.validateLogin(fields.email, fields.password).then(
         function(data) {
             /// If the email and password validate on the server.  
             if(data.valid) {
@@ -175,7 +169,7 @@ function customLogin(fields, success, error) {
 
 var gator = new Gator()
     .validator('customLogin', customLogin, true) // The last param: The email and password must validate require, minlength, and maxlength before this function is called.
-    .init('simpleRegistration');
+    .init();
 ```
 
 ### Triggers

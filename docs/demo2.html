@@ -9,7 +9,7 @@
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-    <link rel="stylesheet" href="stylesheets/app.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/app.css" rel="stylesheet" type="text/css">
   </head>
   <body>
     <div> 
@@ -40,10 +40,9 @@
                                 gt-type="email"
                                 gt-custom-login=":change"
                                 required>
-                            <div gt-messages="simpleLogin.email" style="color:red" role="alert">
+                            <div gt-messages="simpleLogin:email" style="color:red" role="alert">
                                 <div gt-message="required">Email is required.</div>
                                 <div gt-message="type">Must be a valid Email.</div>
-                                <div gt-message="customLogin">Login and Password are incorrect.</div>
                             </div>
                         </div>
                     </div>
@@ -56,28 +55,41 @@
                                 gt-maxlength="15" 
                                 gt-custom-login=":change"
                                 required>
-                            <div gt-messages="simpleLogin.password" style="color:red" role="alert">
+                            <div gt-messages="simpleLogin:password" style="color:red" role="alert">
                                 <div gt-message="required">Password is required.</div>
                                 <div gt-message="minlength">Password is too short.</div>
                                 <div gt-message="maxlength">Password is too long.</div>
+                                <div gt-message="customLogin">Login and Password are incorrect.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <!-- Password -->
+                        <label class="control-label" for="color">Favorite Color</label>
+                        <div class="controls">
+                            <input type="text" name="color" class="form-control" 
+                                required>
+                            <div gt-messages="simpleLogin:color" style="color:red" role="alert">
+                                <div gt-message="required">Secret Question required.</div>
                             </div>
                         </div>
                     </div>
                     <br/>
-                    <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
-                    <strong>Correct username and password: andrew@gmail.com/abc123</strong>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <br/>
+                    <br/>
+                    <strong>Enter the following username and password: andrew@gmail.com/abc123</strong>
                  </fieldset>
             </form>              
         </div>  
      </div>    
-   <script src="js/gator.js"></script>
+   <script src="../dist/gator.js"></script>
     <script>
        
         (function() {
- 
             function customLogin(fields, success, error) {
                 window.setTimeout(function() {
-                    if(fields.email.value === "andrew@gmail.com" && fields.password.value === "abc123") {
+                    if(fields['simpleLogin:email'] === "andrew@gmail.com" && fields['simpleLogin:password'] === "abc123") {
                         success();
                     } else {
                         error();
@@ -85,10 +97,9 @@
                 }, 2000);
             }
 
-           var gator = new Gator()
-                .validator('customLogin', customLogin, true)
-                .init('simpleLogin');
-
+            new Gator()
+                .validator('customLogin', customLogin, true, true)
+                .init();
         }());
         
     </script>
