@@ -1,4 +1,4 @@
-import {NAMESPACE_PREFIX, Type} from "./config";
+import {NAMESPACE_PREFIX, RuleTypes, Rules, Type} from "./config";
 import * as util from "./utils";
 import mediator from "./mediator";
 import factory from "./factory";
@@ -69,10 +69,37 @@ class Gator extends Main {
     init(query) {
         this._init(query);
     }
+
+     addRuleType(type, exp) {
+        if(!exp instanceof RegExp)  {
+            throw new Error(`${exp} must be a regular expression`);
+        }
+        if(RuleTypes.hasOwnProperty(type))  {
+            throw new Error(`${type} already exists as a rule type`);
+        }
+         if(typeof type !== 'string')  {
+            throw new Error(`${type} must be a string.`);
+        }
+        RuleTypes[type] = exp;
+        return this;
+
+    }
+
+    validator(key, fn, async, group, priority) {
+          window.rules = Rules;
+        // TO-DO: Check for correct parameters
+        Rules[key] = { 
+            fn: fn,
+            priority: priority || 0,
+            async: async || false,
+            group: group || false
+        }
+        return this;
+    }
+
+  
    
 }
-
-window.gator = gator;
 
 module.exports = Gator;
  

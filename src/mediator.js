@@ -6,8 +6,8 @@ class Mediator {
         this.fields = {},
         this.forms = {},
         this.messages = {},
-        this.prestine = false;
         this.validator = null;
+        this.prestine = false;
     }
 
     register(obj) {
@@ -38,6 +38,7 @@ class Mediator {
     init() {
         this.validateAll();
         this.prestine = true;
+        window.f = this.forms;
     }
 
     validate(event, validators, fieldKey, fieldValue, state) {

@@ -57,7 +57,7 @@ class Field {
             if(attribute) {
               let p = attr.value.match(ATTR_REGEX);
                 this.validators.push({
-                    key: attribute,
+                    key: util.convertCamelCase(attribute),
                     params: p[1] ? p[1].split(',') : null,
                     event: p[2] || Event.KEYUP 
                 });

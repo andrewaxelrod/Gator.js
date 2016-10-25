@@ -32,14 +32,13 @@ class Validator {
       validated = this.validateLoop(event, validators, fieldValue, fieldState);
 
       fields = this.fields.hasOwnProperty(validated.validatorKey) ? this.fields[validated.validatorKey] : null;
-
+    
       // ASYNC Field Validation
       if(validated.async) {
-        callbackObj = {mediator: this.mediator, fields: fields, validatorKey: validated.validatorKey};
 
         Rules[validated.validatorKey].fn(fields,
-          this.asyncCallback.bind(util.extend(callbackObj, {state: State.SUCCESS})),  
-          this.asyncCallback.bind(util.extend(callbackObj, {state: State.ERROR})));     
+          this.asyncCallback.bind({mediator: this.mediator, fields: fields, validatorKey: validated.validatorKey, state: State.SUCCESS}),  
+          this.asyncCallback.bind({mediator: this.mediator, fields: fields, validatorKey: validated.validatorKey, state: State.ERROR}));     
 
         this.mediator.validateResponse(validated.state, fieldKey, validated.validatorKey);
       // Group Field Validation
@@ -50,10 +49,10 @@ class Validator {
           }
         }
       // Single Field Validation
-      }  else {
+      }  else if(validated.state !== State.SKIP) {
         this.mediator.validateResponse(validated.state, fieldKey, validated.validatorKey);
       }
-    }
+    } 
 
     /**
      * Loops through all the validators for a given field and returns an object based on the validation of the field value.  
@@ -85,15 +84,27 @@ class Validator {
         result.group = false;
 
         if( (validator.event === Event.CHANGE && fieldState === State.ERROR) || event !== validator.event )  {
-           result.state = State.SKIP;
+          if(fieldState === State.SUCCESS) {
+             result.state = State.SUCCESS;
+          }
         } else if(validator.async) { 
-            result.async = true;
-            result.state = State.ASYNC;
+            if(this.isFieldGroupReady(validator.key)) {
+              result.async = true;
+              result.state = State.ASYNC;
+            } else {
+              result.state = State.SKIP;
+            }
             break;
         } else if(validator.group) { 
           if(!Rules[validator.key].group) {
             throw new Error(`Validator.validatorLoop: ${validator.key} must be a group validator.`)
           }
+
+          if(!this.isFieldGroupReady(validator.key)) {
+              result.state = State.SKIP;
+            } else {
+              result.state = State.SKIP;
+            }
 
           result.group = true;
 
@@ -128,7 +139,7 @@ class Validator {
       let fields = this.fields[validatorKey];
       for(let fieldKey in fields)  {
         if (fields.hasOwnProperty(fieldKey)) {
-          if(fields[fieldKey] === null) {
+          if(fields[fieldKey] === null || fields[fieldKey].length === 0) {
             return false;
           }
         }

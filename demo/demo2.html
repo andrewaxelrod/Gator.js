@@ -40,10 +40,9 @@
                                 gt-type="email"
                                 gt-custom-login=":change"
                                 required>
-                            <div gt-messages="simpleLogin.email" style="color:red" role="alert">
+                            <div gt-messages="simpleLogin:email" style="color:red" role="alert">
                                 <div gt-message="required">Email is required.</div>
                                 <div gt-message="type">Must be a valid Email.</div>
-                                <div gt-message="customLogin">Login and Password are incorrect.</div>
                             </div>
                         </div>
                     </div>
@@ -56,14 +55,16 @@
                                 gt-maxlength="15" 
                                 gt-custom-login=":change"
                                 required>
-                            <div gt-messages="simpleLogin.password" style="color:red" role="alert">
+                            <div gt-messages="simpleLogin:password" style="color:red" role="alert">
                                 <div gt-message="required">Password is required.</div>
                                 <div gt-message="minlength">Password is too short.</div>
                                 <div gt-message="maxlength">Password is too long.</div>
+                                <div gt-message="customLogin">Login and Password are incorrect.</div>
                             </div>
                         </div>
                     </div>
                     <br/>
+                     <button type="submit" class="btn btn-primary">Submit</button>
                     <p>Try this form witout a submit button. Click anywhere on the page when done. </p>
                     <strong>Correct username and password: andrew@gmail.com/abc123</strong>
                  </fieldset>
@@ -77,7 +78,7 @@
  
             function customLogin(fields, success, error) {
                 window.setTimeout(function() {
-                    if(fields.email.value === "andrew@gmail.com" && fields.password.value === "abc123") {
+                    if(fields['simpleLogin:email'] === "andrew@gmail.com" && fields['simpleLogin:password'] === "abc123") {
                         success();
                     } else {
                         error();
@@ -85,9 +86,9 @@
                 }, 2000);
             }
 
-           var gator = new Gator()
-                .validator('customLogin', customLogin, true)
-                .init('simpleLogin');
+           new Gator()
+                .validator('customLogin', customLogin, true, true)
+                .init();
 
         }());
         

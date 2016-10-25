@@ -31,6 +31,16 @@ export const log = {
     }
 }
 
+export function renameKeys(obj) {
+    let objCache = {};
+     for (let attrname in obj) { 
+        if(obj.hasOwnProperty(attrname)) {
+            objCache[attrname.split(':')[1]] = obj[attrname];    
+        }
+    }
+    return objCache; 
+}
+
 /**
  * Overwrites obj1's values with obj2's and adds obj2's if non existent in obj1
  * @param {Object} obj1
