@@ -4,7 +4,7 @@
 
 ## Status
 
-Gator.js is still in development. The first official release will be ready in October of 2016.
+Gator.js is still in development. This is not production ready! The first official release will be ready in December of 2016.
 
 ## Demo
 
@@ -182,6 +182,11 @@ This feature is coming soon. Each time a field validates with a success state or
 Build.
 ```
 npm start build
+```
+
+Build Watch.
+```
+npm start build-watch
 ```
 
 Production Build.

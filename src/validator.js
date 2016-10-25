@@ -19,7 +19,6 @@ class Validator {
       }
 
       let validated = null,
-          callbackObj = null,
           fields = null;
 
       // If field keys exist in the field cache, update their values.
@@ -99,12 +98,6 @@ class Validator {
           if(!Rules[validator.key].group) {
             throw new Error(`Validator.validatorLoop: ${validator.key} must be a group validator.`)
           }
-
-          if(!this.isFieldGroupReady(validator.key)) {
-              result.state = State.SKIP;
-            } else {
-              result.state = State.SKIP;
-            }
 
           result.group = true;
 

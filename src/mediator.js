@@ -38,7 +38,6 @@ class Mediator {
     init() {
         this.validateAll();
         this.prestine = true;
-        window.f = this.forms;
     }
 
     validate(event, validators, fieldKey, fieldValue, state) {

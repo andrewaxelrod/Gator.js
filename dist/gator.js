@@ -688,7 +688,6 @@
         Mediator.prototype.init = function init() {
             this.validateAll();
             this.prestine = true;
-            window.f = this.forms;
         };
 
         Mediator.prototype.validate = function validate(event, validators, fieldKey, fieldValue, state) {
@@ -1003,7 +1002,6 @@
       }
 
       var validated = null,
-          callbackObj = null,
           fields = null;
 
       // If field keys exist in the field cache, update their values.
@@ -1086,12 +1084,6 @@
         } else if (validator.group) {
           if (!_config.Rules[validator.key].group) {
             throw new Error("Validator.validatorLoop: " + validator.key + " must be a group validator.");
-          }
-
-          if (!this.isFieldGroupReady(validator.key)) {
-            result.state = _config.State.SKIP;
-          } else {
-            result.state = _config.State.SKIP;
           }
 
           result.group = true;
