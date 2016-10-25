@@ -4,8 +4,6 @@ import mediator from "./mediator";
 import factory from "./factory";
 import validator from "./validator"; 
 
-window.m = mediator;
-
 const FORMS_QUERY = `form`,
       FIELDS_QUERY = `input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])` +
                      `,select[required]:not(:disabled):not([readonly])` + 
@@ -61,7 +59,6 @@ class Main {
 /* This is in the works and still in beginning stages. */
 
 class Gator extends Main {
-
     constructor() {
         super();
     }
@@ -70,7 +67,7 @@ class Gator extends Main {
         this._init(query);
     }
 
-     addRuleType(type, exp) {
+    addRuleType(type, exp) {
         if(!exp instanceof RegExp)  {
             throw new Error(`${exp} must be a regular expression`);
         }
@@ -96,9 +93,6 @@ class Gator extends Main {
         }
         return this;
     }
-
-  
-   
 }
 
 module.exports = Gator;

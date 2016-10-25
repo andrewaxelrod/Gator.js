@@ -536,8 +536,6 @@
         }
     }
 
-    window.m = _mediator2.default;
-
     var FORMS_QUERY = "form",
         FIELDS_QUERY = "input:not(:disabled):not([readonly]):not([type=hidden]):not([type=reset]):not([type=submit]):not([type=button])" + ",select[required]:not(:disabled):not([readonly])" + ",textarea[required]:not(:disabled):not([readonly])",
         MESSAGES_QUERY = "[" + _config.NAMESPACE_PREFIX + "messages]";
